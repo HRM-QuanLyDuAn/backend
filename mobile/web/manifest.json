@@ -1,0 +1,11 @@
+{
+    "name": "F&B Mobile App",
+    "short_name": "F&B Mobile",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#FFFFFF",
+    "theme_color": "#FF6B00",
+    "description": "F&B Management Mobile Application",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false
+}
