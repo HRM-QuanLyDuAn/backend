@@ -106,17 +106,17 @@ Chuẩn response:
 - [ ] Gateway là **cổng duy nhất** cho Web và Mobile: client không gọi thẳng vào các service.
 
 ### Task 2 — identity-service (cổng 4001)
-- [ ] `POST /api/auth/login`
-- [ ] `POST /api/auth/logout`
-- [ ] `GET /api/auth/me`
-- [ ] Middleware đọc cookie `hrm-session` và gắn `req.user`.
-- [ ] Phân quyền theo vai trò: `admin`, `manager`, `staff`.
-- [ ] Seed 3 tài khoản: `admin`, `manager`, `staff`.
-- [ ] `GET /health`.
-- [ ] `POST /api/auth/refresh` — cấp lại access token bằng refresh token (Tech.md §2.3) **(suy ra)**.
-- [ ] `POST /api/auth/change-password` — phục vụ đổi mật khẩu trên mobile (`profile/password.dart`) **(suy ra)**.
-- [ ] `POST /api/auth/forgot-password` — phục vụ nút "Quên mật khẩu?" trên web và mobile **(suy ra)**.
-- [ ] `GET /api/auth/devices` và `DELETE /api/auth/devices/:id` — quản lý thiết bị/phiên đăng nhập **(suy ra)**.
+- [x] `POST /api/auth/login`
+- [x] `POST /api/auth/logout`
+- [x] `GET /api/auth/me`
+- [x] Middleware đọc cookie `hrm-session` và gắn `req.user`.
+- [x] Phân quyền theo vai trò: `admin`, `manager`, `staff`.
+- [x] Seed 3 tài khoản: `admin`, `manager`, `staff`.
+- [x] `GET /health`.
+- [x] `POST /api/auth/refresh` — cấp lại access token bằng refresh token (Tech.md §2.3) **(suy ra)**.
+- [x] `POST /api/auth/change-password` — phục vụ đổi mật khẩu trên mobile (`profile/password.dart`) **(suy ra)**.
+- [x] `POST /api/auth/forgot-password` — phục vụ nút "Quên mật khẩu?" trên web và mobile **(suy ra)**.
+- [x] `GET /api/auth/devices` và `DELETE /api/auth/devices/:id` — quản lý thiết bị/phiên đăng nhập **(suy ra)**.
 
 > Quyết định đã chốt: DB dùng **PostgreSQL (Supabase) + Prisma**; auth dùng **JWT + cookie `hrm-session` HttpOnly**; seed pass mặc định `123456`.
 
