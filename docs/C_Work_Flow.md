@@ -101,12 +101,12 @@ Mỗi service có `GET /health`, trả:
   - `POST /api/tasks`, `PUT /api/tasks/:id`, `DELETE /api/tasks/:id` — CRUD tác vụ.
 - [ ] `GET /health`.
 
-### Task 2 — integration-service (cổng 4005)
-- [ ] **SOAP Bank Gateway:**
+### Task 2 — integration-service (cổng 4005) — ✅ XONG (PR `feat/integration-service`)
+- [x] **SOAP Bank Gateway:**
   - `GET /soap/payroll?wsdl` — expose WSDL hợp lệ.
   - `POST /soap/payroll` — nhận `PayoutRequest`, gọi sang REST payout của B (`payroll-service`), trả `PayoutResponse`.
   - Lỗi hết số dư (422) từ B chuyển thành `soap:Fault` với `faultcode = soap:Client` và `faultstring` mô tả.
-- [ ] **Requests (yêu cầu nội bộ):**
+- [x] **Requests (yêu cầu nội bộ):**
   - `GET /api/requests?employeeId=&branchSlug=&status=&type=` — danh sách yêu cầu.
   - `GET /api/requests/:id` — chi tiết một yêu cầu (`request_detail`).
   - `POST /api/requests` — tạo yêu cầu mới. `type` hỗ trợ: `leave`, `overtime`, `advance`, `shift_swap`, `work_supplement`, `other`.
@@ -115,21 +115,21 @@ Mỗi service có `GET /health`, trả:
   - `DELETE /api/requests/:id` — xóa yêu cầu khi đang `pending`.
   - **Lưu ý `shift_swap`:** payload kèm `sourceShiftId` và `targetShiftId`. Khi duyệt, cập nhật phân công ca ở work-service.
   - **Lưu ý `work_supplement`:** khi duyệt, cập nhật bản ghi công tương ứng ở attendance.
-- [ ] **Notifications (thông báo):**
+- [x] **Notifications (thông báo):**
   - `GET /api/notifications?employeeId=&branchSlug=` — gồm cả broadcast (`targetEmployeeId = null`).
   - `POST /api/notifications` — gửi thông báo mới.
   - `PUT /api/notifications/:id/read` — đánh dấu đã đọc.
   - `DELETE /api/notifications/:id`.
-- [ ] **Bảng tin (News/Announcements):**
+- [x] **Bảng tin (News/Announcements):**
   - `GET /api/news`, `GET /api/news/:id`.
   - `POST /api/news`, `PUT /api/news/:id`, `DELETE /api/news/:id` (chỉ `admin`/`manager`).
-- [ ] **Nội quy (Regulations):**
+- [x] **Nội quy (Regulations):**
   - `GET /api/regulations`, `GET /api/regulations/:id`.
   - `POST /api/regulations`, `PUT /api/regulations/:id`, `DELETE /api/regulations/:id`.
-- [ ] **Wi-Fi chấm công:**
+- [x] **Wi-Fi chấm công:**
   - `GET /api/wifi-configs?branch=`.
   - `POST /api/wifi-configs`, `PUT /api/wifi-configs/:id`, `DELETE /api/wifi-configs/:id`.
-- [ ] `GET /health`.
+- [x] `GET /health`.
 
 ---
 
