@@ -95,15 +95,15 @@ Chuẩn response:
 
 ## 4. Danh sách việc của A
 
-### Task 1 — api-gateway (cổng 4000)
-- [ ] Dựng gateway proxy về các service 4001–4005.
-- [ ] Cấu hình CORS cho phép cookie `hrm-session` (credentials: true, origin cụ thể).
-- [ ] Xử lý lỗi tập trung, trả đúng envelope `{error: {code, message}}`.
-- [ ] `GET /health` cho gateway.
+### Task 1 — api-gateway (cổng 4000) — ✅ XONG (PR `feat/api-gateway-proxy`)
+- [x] Dựng gateway proxy về các service 4001–4005.
+- [x] Cấu hình CORS cho phép cookie `hrm-session` (credentials: true, origin cụ thể).
+- [x] Xử lý lỗi tập trung, trả đúng envelope `{error: {code, message}}`.
+- [x] `GET /health` cho gateway.
 - [ ] Viết `docker-compose` chạy đủ 6 thành phần (gateway + 5 service + database).
-- [ ] Đặt timeout tối đa 5000ms khi proxy về service phía sau.
-- [ ] Rate-limiting và xác thực JWT đầu vào tại gateway (Tech.md §4.5) **(suy ra)**.
-- [ ] Gateway là **cổng duy nhất** cho Web và Mobile: client không gọi thẳng vào các service.
+- [x] Đặt timeout tối đa 5000ms khi proxy về service phía sau.
+- [x] Rate-limiting và xác thực JWT đầu vào tại gateway (Tech.md §4.5) **(suy ra)**.
+- [x] Gateway là **cổng duy nhất** cho Web và Mobile: client không gọi thẳng vào các service.
 
 ### Task 2 — identity-service (cổng 4001)
 - [x] `POST /api/auth/login`
