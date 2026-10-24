@@ -1,0 +1,54 @@
+// Prisma schema — payroll-service
+// DB riêng hrm_payroll (single-tenant, không có tenantId).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BankAccount {
+  id            String   @id @default(cuid())
+  accountNumber String   @unique
+  accountName   String?
+  bankName      String?
+  balance       Float    @default(0)
+  status        String   @default("hoạt động")
+  isPrimary     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("bank_accounts")
+}
+
+model Payout {
+  id               String   @id
+  bankReference    String   @unique
+  debitAccount     String
+  totalAmount      Float
+  content          String?
+  beneficiaryCount Int      @default(0)
+  idempotencyKey   String   @unique
+  status           String   @default("pending")
+  createdAt        DateTime @default(now())
+
+  @@map("payouts")
+}
+
+model Payslip {
+  id          String   @id @default(cuid())
+  employeeId  String
+  month       String
+  baseSalary  Float    @default(0)
+  bonus       Float    @default(0)
+  totalPenalty Float   @default(0)
+  netSalary   Float    @default(0)
+  payoutId    String?
+  status      String   @default("chưa chốt")
+  issuedAt    DateTime @default(now())
+
+  @@unique([employeeId, month])
+  @@map("payslips")
+}
