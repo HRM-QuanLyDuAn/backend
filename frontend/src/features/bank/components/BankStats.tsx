@@ -80,17 +80,19 @@ export default function BankHeaderStats({
             </div>
           </div>
           <div className="text-lg font-bold text-gray-900 truncate">
-            {primaryBank.name}
+            {primaryBank?.name || "Chưa thiết lập"}
           </div>
           <div className="text-xs text-gray-500 font-mono mt-0.5">
             Số tài khoản nguồn:{" "}
-            <span className="font-bold text-gray-800">{primaryBank.accountNumber}</span>
+            <span className="font-bold text-gray-800">
+              {primaryBank?.accountNumber || "—"}
+            </span>
           </div>
         </div>
         <div className="mt-4 flex items-center justify-between text-xs border-t border-gray-100 pt-3 text-gray-600">
           <span>Chi nhánh mở tài khoản:</span>
           <span className="font-semibold text-gray-800">
-            {primaryBank.branch}
+            {primaryBank?.branch || "—"}
           </span>
         </div>
       </div>
@@ -114,9 +116,9 @@ export default function BankHeaderStats({
           </div>
         </div>
         <div className="mt-4 flex items-center justify-between text-xs border-t border-gray-100 pt-3 text-gray-600">
-          <span>Tài khoản chính ({primaryBank.shortName}):</span>
+          <span>Tài khoản chính ({primaryBank?.shortName || "—"}):</span>
           <span className="font-bold text-emerald-700 text-sm">
-            {formatVND(primaryBank.balance)}
+            {formatVND(primaryBank?.balance || 0)}
           </span>
         </div>
       </div>

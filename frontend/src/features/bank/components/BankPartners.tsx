@@ -36,7 +36,12 @@ export default function BankPartnersList({
         </div>
       </CardHeader>
       <CardBody>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {partners.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 text-sm">
+            Chưa có tài khoản ngân hàng doanh nghiệp nào được liên kết.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {partners.map((partner) => {
             const isPrimary = partner.isPrimary;
             return (
@@ -136,6 +141,7 @@ export default function BankPartnersList({
             );
           })}
         </div>
+        )}
       </CardBody>
     </Card>
   );
