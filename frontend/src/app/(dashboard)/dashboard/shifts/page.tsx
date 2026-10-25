@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalendarDay, faCalendarWeek, faGear } from "@fortawesome/free-solid-svg-icons";
+import { faCalendarDay, faCalendarWeek, faGear, faRotateRight } from "@fortawesome/free-solid-svg-icons";
 import PageHeader from "@/components/ui/PageHeader";
+import Button from "@/components/ui/Button";
 import { employees } from "@/mock-data/portal";
 import type { ShiftTemplate, WorkShift, WeeklyRegistration } from "@/features/shifts/types";
 import ShiftTemplateSection from "@/features/shifts/components/ShiftTemplates";
@@ -15,6 +16,7 @@ import TemplateModal from "@/features/shifts/components/modals/TemplateForm";
 import AssignShiftModal from "@/features/shifts/components/modals/ShiftAssign";
 import ExportModal from "@/features/shifts/components/modals/ShiftExport";
 import { useCurrentUser } from "@/context/AuthContext";
+import { apiGet, apiPost } from "@/lib/api";
 
 const initialTemplates: ShiftTemplate[] = [
   { id: "t1", name: "Ca Sáng", startTime: "07:00", endTime: "14:00" },
@@ -59,13 +61,13 @@ const initialWeeklyRegistrations: WeeklyRegistration[] = [
     order: 2,
     note: "Xin ưu tiên xếp ca sáng để tiện đưa đón con nhỏ",
     days: {
-      "T2": "Ca Chiều",
-      "T3": "Ca Chiều",
+      "T2": "Ca Sáng",
+      "T3": "Ca Sáng",
       "T4": "Ca Sáng",
       "T5": "Ca Sáng",
-      "T6": "Nghỉ",
-      "T7": "Ca Chiều",
-      "CN": "Ca Sáng",
+      "T6": "Ca Sáng",
+      "T7": "Ca Sáng",
+      "CN": "Nghỉ",
     },
   },
   {
@@ -92,24 +94,17 @@ const initialWeeklyRegistrations: WeeklyRegistration[] = [
 export default function ShiftsPage() {
   const { role, branchSlug } = useCurrentUser();
   const isManager = role === "manager";
-  const managerBranch = branchSlug.toUpperCase(); // e.g. hn-1 -> HN-1
+  const managerBranch = branchSlug.toUpperCase();
   const [activeTab, setActiveTab] = useState<"scheduling" | "general_schedule" | "templates">("scheduling");
 
   const [templates, setTemplates] = useState<ShiftTemplate[]>(initialTemplates);
   const [workShiftList, setWorkShiftList] = useState<WorkShift[]>(initialWorkShifts);
   const [weeklyRegistrations] = useState<WeeklyRegistration[]>(initialWeeklyRegistrations);
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState<{ text: string; tone: "success" | "danger" } | null>(null);
 
-  // Bộ chọn ngày & chi nhánh cho khối Xếp ca - Manager cứng theo chi nhánh phụ trách
   const [schedulerDate, setSchedulerDate] = useState("17/08/2026");
   const [schedulerBranch, setSchedulerBranch] = useState(isManager ? managerBranch : "HN-1");
-
-  // Manager chỉ thấy dữ liệu chi nhánh mình - lọc lịch sử hiển thị
-  const displayedWorkShifts = isManager
-    ? workShiftList.filter((s) => s.branch.toLowerCase().replace("-", "") === branchSlug.replace("-", ""))
-    : workShiftList;
-  const displayedRegistrations = isManager
-    ? weeklyRegistrations.filter((r) => r.branch.toLowerCase().replace("-", "") === branchSlug.replace("-", ""))
-    : weeklyRegistrations;
 
   const [exportOpen, setExportOpen] = useState(false);
   const [addTemplateOpen, setAddTemplateOpen] = useState(false);
@@ -127,6 +122,55 @@ export default function ShiftsPage() {
   const [assignNote, setAssignNote] = useState("");
   const [assignIsRecurring, setAssignIsRecurring] = useState(true);
 
+  const showToast = (text: string, tone: "success" | "danger" = "success") => {
+    setToast({ text, tone });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const loadShifts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [tplData, shiftData] = await Promise.all([
+        apiGet<any[]>("/api/shift-templates").catch(() => null),
+        apiGet<any[]>("/api/shifts").catch(() => null),
+      ]);
+      if (tplData && Array.isArray(tplData) && tplData.length > 0) {
+        setTemplates(tplData);
+      }
+      if (shiftData && Array.isArray(shiftData) && shiftData.length > 0) {
+        setWorkShiftList(shiftData.map((s: any) => ({
+          id: s.id,
+          employee: s.employee || s.employeeId || "Nhân sự",
+          branch: s.branchSlug || s.branch || "HN-1",
+          date: s.date || "17/08/2026",
+          templateName: s.template || s.templateName || "Ca Sáng",
+          scheduled: s.scheduled || `${s.scheduledStart || "07:00"}-${s.scheduledEnd || "14:00"}`,
+          checkIn: s.checkIn || "—",
+          checkOut: s.checkOut || "—",
+          status: s.status === "hoàn thành" ? "Đúng giờ" : s.status || "Chưa làm",
+          note: s.note || "",
+          isRecurring: true,
+        })));
+      }
+    } catch {
+      // Giữ mock data
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadShifts();
+  }, [loadShifts]);
+
+  // Manager chỉ thấy dữ liệu chi nhánh mình - lọc lịch sử hiển thị
+  const displayedWorkShifts = isManager
+    ? workShiftList.filter((s) => s.branch.toLowerCase().replace("-", "") === branchSlug.replace("-", ""))
+    : workShiftList;
+  const displayedRegistrations = isManager
+    ? weeklyRegistrations.filter((r) => r.branch.toLowerCase().replace("-", "") === branchSlug.replace("-", ""))
+    : weeklyRegistrations;
+
   const openAddTemplate = () => {
     setEditingTemplate(null);
     setNewTemplateName("");
@@ -143,8 +187,16 @@ export default function ShiftsPage() {
     setAddTemplateOpen(true);
   };
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!newTemplateName) return;
+    const tplData = { name: newTemplateName, startTime: newTemplateStart, endTime: newTemplateEnd };
+    try {
+      await apiPost("/api/shift-templates", tplData);
+      showToast("Lưu khung ca mẫu thành công!");
+    } catch {
+      showToast("Đã lưu khung ca (cục bộ)!", "success");
+    }
+
     if (editingTemplate) {
       setTemplates((prev) =>
         prev.map((t) =>
@@ -164,18 +216,21 @@ export default function ShiftsPage() {
     setNewTemplateName("");
   };
 
-  // Xóa phân công ca
-  const handleRemoveShift = (workShiftId: string) => {
-    setWorkShiftList((prev) => prev.filter((s) => s.id !== workShiftId));
+  const handleDeleteTemplate = (id: string) => {
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    showToast("Đã xóa khung ca mẫu!");
   };
 
-  // Xếp ca nhanh từ bảng Nguyện vọng đăng ký
+  const handleRemoveShift = (workShiftId: string) => {
+    setWorkShiftList((prev) => prev.filter((s) => s.id !== workShiftId));
+    showToast("Đã hủy phân công ca làm!");
+  };
+
   const handleAssignFromRegistration = (reg: WeeklyRegistration) => {
     setAssignEmployee(reg.employeeName);
     setAssignBranch(reg.branch);
     setAssignDate(schedulerDate);
     setAssignIsRecurring(true);
-    // Tìm ca đầu tiên đăng ký khác Nghỉ
     const firstActiveShift = Object.entries(reg.days).find(([_, shift]) => shift !== "Nghỉ");
     if (firstActiveShift) {
       const match = templates.find((t) => t.name.toLowerCase() === firstActiveShift[1].toLowerCase());
@@ -184,7 +239,7 @@ export default function ShiftsPage() {
     setAssignShiftOpen(true);
   };
 
-  const handleAssignShift = () => {
+  const handleAssignShift = async () => {
     const template = templates.find((t) => t.id === assignTemplateId) || templates[0];
     const created: WorkShift = {
       id: `ws-${Date.now()}`,
@@ -199,6 +254,21 @@ export default function ShiftsPage() {
       note: assignNote,
       isRecurring: assignIsRecurring,
     };
+
+    try {
+      await apiPost("/api/shifts", {
+        employeeId: assignEmployee,
+        branchSlug: assignBranch,
+        date: assignDate,
+        template: template.name,
+        scheduledStart: template.startTime,
+        scheduledEnd: template.endTime,
+      });
+      showToast("Xếp ca làm việc thành công!");
+    } catch {
+      showToast("Đã xếp ca làm việc (cục bộ)!", "success");
+    }
+
     setWorkShiftList((prev) => [created, ...prev]);
     setAssignShiftOpen(false);
     setAssignNote("");
@@ -206,97 +276,99 @@ export default function ShiftsPage() {
   };
 
   return (
-    <div>
+    <div className="space-y-4">
+      {toast && (
+        <div
+          className={`fixed top-4 right-4 z-50 px-4 py-2.5 rounded-lg text-sm font-semibold shadow-lg text-white transition-all ${
+            toast.tone === "success" ? "bg-emerald-600" : "bg-rose-600"
+          }`}
+        >
+          {toast.text}
+        </div>
+      )}
+
       <PageHeader
+        title="Quản trị Ca làm việc & Chấm công Wi-Fi"
+        breadcrumb={[{ label: "HRM", href: "#" }, { label: "Vận hành ca kíp" }]}
         actions={
-          <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl border border-gray-200">
-            <button
-              type="button"
-              onClick={() => setActiveTab("scheduling")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                activeTab === "scheduling"
-                  ? "bg-white text-primary shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <FontAwesomeIcon icon={faCalendarWeek} fontSize={15} />
-              <span>Quản lý đăng ký ca</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("general_schedule")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                activeTab === "general_schedule"
-                  ? "bg-white text-primary shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <FontAwesomeIcon icon={faCalendarDay} fontSize={15} />
-              <span>Lịch làm việc chung</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("templates")}
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
-                activeTab === "templates"
-                  ? "bg-white text-primary shadow-xs"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              <FontAwesomeIcon icon={faGear} fontSize={15} />
-              <span>Cấu hình ca mẫu</span>
-            </button>
+          <div className="flex items-center gap-2">
+            <Button variant="white" onClick={loadShifts} disabled={loading}>
+              <FontAwesomeIcon icon={faRotateRight} className={loading ? "animate-spin" : ""} /> Tải lại
+            </Button>
+            <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl border border-gray-200">
+              <button
+                type="button"
+                onClick={() => setActiveTab("scheduling")}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                  activeTab === "scheduling"
+                    ? "bg-white text-primary shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <FontAwesomeIcon icon={faCalendarDay} fontSize={13} />
+                <span>Xếp ca & Nguyện vọng</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("general_schedule")}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                  activeTab === "general_schedule"
+                    ? "bg-white text-primary shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <FontAwesomeIcon icon={faCalendarWeek} fontSize={13} />
+                <span>Lịch tổng & Chấm công</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("templates")}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all cursor-pointer ${
+                  activeTab === "templates"
+                    ? "bg-white text-primary shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <FontAwesomeIcon icon={faGear} fontSize={13} />
+                <span>Khung ca mẫu</span>
+              </button>
+            </div>
           </div>
         }
       />
 
-      {/* Tab 1: Lịch làm việc chung toàn chi nhánh (Giống Mobile) */}
-      {activeTab === "general_schedule" && (
-        <GeneralScheduleSection
-          workShifts={displayedWorkShifts}
-          templates={templates}
-          defaultBranch={schedulerBranch}
-          isManager={isManager}
-          managerBranch={managerBranch}
-          onOpenAssignModal={(templateId, date, branch) => {
-            const effectiveBranch = isManager ? managerBranch : branch;
-            setAssignTemplateId(templateId);
-            setAssignDate(date);
-            setAssignBranch(effectiveBranch);
-            setAssignIsRecurring(true);
-            setAssignShiftOpen(true);
-          }}
-        />
+      {activeTab === "scheduling" && (
+        <div className="space-y-6">
+          <RegistrationTimetableSection
+            registrations={displayedRegistrations}
+            defaultBranch={schedulerBranch}
+            isManager={isManager}
+            managerBranch={isManager ? "hn-1" : undefined}
+          />
+
+          <WeeklyRegistrationSection
+            registrations={displayedRegistrations}
+            onAssignFromRegistration={handleAssignFromRegistration}
+          />
+        </div>
       )}
 
-      {/* Tab 2: Quản lý đăng ký ca (Thời gian biểu đăng ký + Lịch sử phân công) */}
-      {activeTab === "scheduling" && (
-        <div className="flex flex-col gap-6">
-          {/* Thời gian biểu đăng ký ca - lưu lịch sử đăng ký như Lịch làm việc chung */}
-          <RegistrationTimetableSection registrations={displayedRegistrations} defaultBranch={schedulerBranch} isManager={isManager} managerBranch={managerBranch} />
+      {activeTab === "general_schedule" && (
+        <div className="space-y-6">
+          <GeneralScheduleSection
+            workShifts={displayedWorkShifts}
+            templates={templates}
+            defaultBranch={schedulerBranch}
+            isManager={isManager}
+            managerBranch={isManager ? "hn-1" : undefined}
+            onOpenAssignModal={(templateId, date, branch) => {
+              setAssignTemplateId(templateId);
+              setAssignDate(date);
+              setAssignBranch(branch);
+              setAssignShiftOpen(true);
+            }}
+          />
 
-          {/* Bảng tổng hợp nguyện vọng toàn cảnh cả tuần (Thu gọn / Mở rộng để tham khảo ma trận) */}
-          <details className="group bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
-            <summary className="px-5 py-3.5 flex items-center justify-between cursor-pointer select-none hover:bg-gray-50/80 transition-colors font-bold text-xs text-gray-700">
-              <span className="flex items-center gap-2">
-                <FontAwesomeIcon icon={faCalendarDay} fontSize={16} className="text-primary" />
-                <span>Bảng ma trận nguyện vọng cả tuần của toàn bộ nhân viên (Thứ 2 - CN)</span>
-              </span>
-              <span className="text-[11px] text-gray-400 group-open:hidden">
-                Bấm để mở rộng bảng tổng hợp toàn cảnh ▼
-              </span>
-            </summary>
-            <div className="p-4 pt-2 border-t border-gray-100">
-              <WeeklyRegistrationSection
-                registrations={displayedRegistrations}
-                onAssignFromRegistration={handleAssignFromRegistration}
-              />
-            </div>
-          </details>
-
-          {/* Khối 3: Bảng danh sách chi tiết toàn bộ phân công */}
           <WorkShiftSection
             workShifts={displayedWorkShifts}
             onDelete={handleRemoveShift}
@@ -304,16 +376,13 @@ export default function ShiftsPage() {
         </div>
       )}
 
-      {/* Tab 3: Cấu hình ca mẫu (Đã loại bỏ khối Lịch sử ca) */}
       {activeTab === "templates" && (
-        <div className="flex flex-col gap-6">
-          <ShiftTemplateSection
-            templates={templates}
-            onAdd={openAddTemplate}
-            onEdit={openEditTemplate}
-            onDelete={(id) => setTemplates((prev) => prev.filter((t) => t.id !== id))}
-          />
-        </div>
+        <ShiftTemplateSection
+          templates={templates}
+          onAdd={openAddTemplate}
+          onEdit={openEditTemplate}
+          onDelete={handleDeleteTemplate}
+        />
       )}
 
       <TemplateModal
@@ -340,7 +409,7 @@ export default function ShiftsPage() {
         note={assignNote}
         isRecurring={assignIsRecurring}
         isManager={isManager}
-        managerBranch={managerBranch}
+        managerBranch={isManager ? "hn-1" : undefined}
         lockedBranch={schedulerBranch}
         onEmployeeChange={setAssignEmployee}
         onBranchChange={setAssignBranch}
