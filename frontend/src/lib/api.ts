@@ -106,6 +106,37 @@ export async function apiDelete<T>(path: string): Promise<T> {
   }
 }
 
+export interface PayoutPayload {
+  idempotencyKey: string;
+  debitAccount: string;
+  content: string;
+  totalAmount: number;
+  beneficiaryCount: number;
+}
+
+/** Tạo lệnh chi REST qua gateway. Gửi 2 lần cùng idempotencyKey, lần 2 trả bản ghi cũ kèm deduped:true. */
+export function createPayout(payload: PayoutPayload) {
+  return apiPost("/api/payroll/payouts", payload);
+}
+
+/** Gọi SOAP ngân hàng qua gateway — đi/nhận nguyên vẹn XML, lỗi trả soap:Fault. */
+export async function postSoapPayroll(xmlBody: string): Promise<string> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(`${GATEWAY_URL}/soap/payroll`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "text/xml; charset=utf-8" },
+      body: xmlBody,
+      signal: controller.signal,
+    });
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function gatewayHealth() {
   return apiGet<{ status: string; service: string; time: string }>("/health");
 }
