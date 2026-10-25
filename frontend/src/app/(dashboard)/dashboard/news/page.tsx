@@ -1,30 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import PageHeader from "@/components/ui/PageHeader";
 import Button from "@/components/ui/Button";
-import { initialNews } from "@/features/news/mock";
 import type { NewsItem } from "@/features/news/types";
 import NewsSection from "@/features/news/components/NewsList";
 import NewsDetailModal from "@/features/news/components/modals/NewsDetail";
-import CreateNewsModal from "@/features/news/components/modals/NewsForm";
+import CreateNewsModal, { type NewsFormPayload } from "@/features/news/components/modals/NewsForm";
+import { apiGet, apiPost, apiPut, apiDelete, GatewayError } from "@/lib/api";
 
 export default function NewsPage() {
-  const [newsList, setNewsList] = useState<NewsItem[]>(initialNews);
+  const [newsList, setNewsList] = useState<NewsItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<NewsItem | null>(null);
+  const [saving, setSaving] = useState(false);
   const [selectedNews, setSelectedNews] = useState<NewsItem | null>(null);
 
-  const handleCreateNews = (item: NewsItem) => {
-    setNewsList((prev) => [item, ...prev]);
-    setModalOpen(false);
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await apiGet<NewsItem[]>("/api/news");
+      setNewsList(data || []);
+    } catch (e) {
+      setError(e instanceof GatewayError ? e.message : "Lỗi tải bảng tin");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleOpenCreate = () => {
+    setEditingItem(null);
+    setModalOpen(true);
   };
 
-  const handleDeleteNews = (id: string) => {
-    setNewsList((prev) => prev.filter((n) => n.id !== id));
-    if (selectedNews?.id === id) {
-      setSelectedNews(null);
+  const handleOpenEdit = (item: NewsItem) => {
+    setEditingItem(item);
+    setModalOpen(true);
+  };
+
+  const handleSubmit = async (payload: NewsFormPayload) => {
+    setSaving(true);
+    try {
+      if (editingItem) {
+        const updated = await apiPut<NewsItem>(`/api/news/${editingItem.id}`, payload);
+        setNewsList((prev) => prev.map((n) => (n.id === editingItem.id ? updated : n)));
+        if (selectedNews?.id === editingItem.id) setSelectedNews(updated);
+      } else {
+        const created = await apiPost<NewsItem>("/api/news", {
+          ...payload,
+          date: new Date().toLocaleDateString("vi-VN").replace(/\//g, "-"),
+        });
+        setNewsList((prev) => [created, ...prev]);
+      }
+      setModalOpen(false);
+      setEditingItem(null);
+    } catch (e) {
+      alert(e instanceof GatewayError ? e.message : "Lỗi lưu thông báo.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteNews = async (id: string) => {
+    const target = newsList.find((n) => n.id === id);
+    if (!confirm(`Bạn có chắc chắn muốn xóa thông báo "${target?.title ?? ""}" không?`)) return;
+    try {
+      await apiDelete(`/api/news/${id}`);
+      setNewsList((prev) => prev.filter((n) => n.id !== id));
+      if (selectedNews?.id === id) setSelectedNews(null);
+    } catch (e) {
+      alert(e instanceof GatewayError ? e.message : "Lỗi xóa thông báo.");
     }
   };
 
@@ -34,19 +88,52 @@ export default function NewsPage() {
         title="Quản lý Bảng Tin & Truyền Thông Nội Bộ"
         breadcrumb={[{ label: "HR & Quản trị", href: "#" }, { label: "Bảng tin & Thông báo" }]}
         actions={
-          <Button onClick={() => setModalOpen(true)}>
-            <FontAwesomeIcon icon={faPlus} fontSize={18} /> Đăng thông báo mới
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleOpenCreate}>
+              <FontAwesomeIcon icon={faPlus} fontSize={18} /> Đăng thông báo mới
+            </Button>
+          </div>
         }
       />
 
-      <NewsSection items={newsList} onSelect={setSelectedNews} onDelete={handleDeleteNews} />
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium flex items-center justify-between gap-3">
+          <span>{error}</span>
+          <Button variant="white" onClick={fetchData} className="text-xs shrink-0">
+            Thử lại
+          </Button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex flex-col gap-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 animate-pulse">
+              <div className="h-4 bg-gray-100 rounded w-1/4 mb-3" />
+              <div className="h-5 bg-gray-100 rounded w-2/3 mb-2" />
+              <div className="h-3 bg-gray-100 rounded w-full" />
+            </div>
+          ))}
+          <div className="text-xs text-gray-500">Đang tải bảng tin qua Gateway...</div>
+        </div>
+      ) : (
+        <NewsSection items={newsList} onSelect={setSelectedNews} onEdit={handleOpenEdit} onDelete={handleDeleteNews} />
+      )}
 
       {/* Modal xem chi tiết thông báo */}
       <NewsDetailModal item={selectedNews} onClose={() => setSelectedNews(null)} />
 
-      {/* Modal tạo thông báo mới */}
-      <CreateNewsModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={handleCreateNews} />
+      {/* Modal tạo/sửa thông báo */}
+      <CreateNewsModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingItem(null);
+        }}
+        initial={editingItem}
+        saving={saving}
+        onSubmit={handleSubmit}
+      />
     </div>
   );
 }

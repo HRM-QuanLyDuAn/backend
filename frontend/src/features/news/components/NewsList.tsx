@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faThumbtack, faTrashCan } from "@fortawesome/free-solid-svg-icons";
+import { faEye, faPencil, faThumbtack, faTrashCan } from "@fortawesome/free-solid-svg-icons";
 import { Card, CardBody } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import type { NewsItem } from "../types";
@@ -12,10 +12,11 @@ const TAGS = ["all", "Nghỉ lễ", "Vận hành", "Khen thưởng", "Khẩn c�
 interface Props {
   items: NewsItem[];
   onSelect: (item: NewsItem) => void;
+  onEdit: (item: NewsItem) => void;
   onDelete: (id: string) => void;
 }
 
-export default function NewsSection({ items, onSelect, onDelete }: Props) {
+export default function NewsSection({ items, onSelect, onEdit, onDelete }: Props) {
   const [filterTag, setFilterTag] = useState<string>("all");
 
   const filteredNews = filterTag === "all"
@@ -99,6 +100,18 @@ export default function NewsSection({ items, onSelect, onDelete }: Props) {
                     >
                       <FontAwesomeIcon icon={faEye} fontSize={15} />
                       Xem chi tiết
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(item);
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors cursor-pointer"
+                      title="Sửa thông báo"
+                    >
+                      <FontAwesomeIcon icon={faPencil} fontSize={16} />
                     </button>
 
                     <button

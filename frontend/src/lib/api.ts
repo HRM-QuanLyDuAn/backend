@@ -21,7 +21,7 @@ export class GatewayError extends Error {
   }
 }
 
-async function parseEnvelope(res: Response) {
+async function parseEnvelope<T>(res: Response): Promise<T> {
   const text = await res.text();
   let body: unknown = null;
   try {
@@ -38,9 +38,9 @@ async function parseEnvelope(res: Response) {
     );
   }
   if (body !== null && typeof body === "object" && "data" in body) {
-    return (body as { data: unknown }).data;
+    return (body as { data: T }).data;
   }
-  return body;
+  return body as T;
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -51,7 +51,7 @@ export async function apiGet<T>(path: string): Promise<T> {
       credentials: "include",
       signal: controller.signal,
     });
-    return (await parseEnvelope(res)) as T;
+    return await parseEnvelope<T>(res);
   } finally {
     clearTimeout(timer);
   }
@@ -68,7 +68,7 @@ export async function apiPost<T>(path: string, payload: unknown): Promise<T> {
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-    return (await parseEnvelope(res)) as T;
+    return await parseEnvelope<T>(res);
   } finally {
     clearTimeout(timer);
   }
@@ -85,7 +85,22 @@ export async function apiPut<T>(path: string, payload?: unknown): Promise<T> {
       body: payload !== undefined ? JSON.stringify(payload) : undefined,
       signal: controller.signal,
     });
-    return (await parseEnvelope(res)) as T;
+    return await parseEnvelope<T>(res);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function apiDelete<T>(path: string): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(`${GATEWAY_URL}${path}`, {
+      method: "DELETE",
+      credentials: "include",
+      signal: controller.signal,
+    });
+    return await parseEnvelope<T>(res);
   } finally {
     clearTimeout(timer);
   }
