@@ -1,8 +1,8 @@
 import 'package:go_router/go_router.dart';
 import '../models/user.dart';
-import '../../features/auth/presentation/splash.dart';
-import '../../features/auth/presentation/login.dart';
-import '../../features/main/presentation/main_nav.dart';
+import '../../features/auth/splash.dart';
+import '../../features/auth/login.dart';
+import '../../features/home/main_nav.dart';
 
 /// Single source of truth cho điều hướng toàn app.
 ///

@@ -30,28 +30,36 @@ class UserModel {
   final String bankAccountNumber; // Số tài khoản ngân hàng
   final String bankAccountName; // Tên chủ tài khoản
 
+  /// Hình ảnh xác thực (Cloudinary)
+  final String? avatarUrl;
+  final String? cccdFrontUrl;
+  final String? cccdBackUrl;
+
   const UserModel({
-    this.id = '1',
+    this.id = '',
     required this.name,
     required this.email,
-    this.phone = '0912345678',
+    this.phone = '',
     required this.role,
     required this.roleTitle,
-    this.assignedBranchId = '01',
-    this.gender = 'Nữ',
-    this.birthDate = '24/08/1999',
-    this.province = 'Hà Nội',
-    this.ward = 'Phường Hàng Bài',
-    this.street = '15 Phố Hàng Bài, Q. Hoàn Kiếm',
-    this.cccd = '001199014567',
-    this.issueDate = '10/05/2021',
-    this.issuePlace = 'Cục CS QLHC về TTXH',
+    this.assignedBranchId,
+    this.gender = '',
+    this.birthDate = '',
+    this.province = '',
+    this.ward = '',
+    this.street = '',
+    this.cccd = '',
+    this.issueDate = '',
+    this.issuePlace = '',
     this.salaryType = 'hourly',
-    this.hourlySalary = 35000.0,
-    this.baseSalary = 8500000.0,
-    this.bankName = 'VietinBank',
-    this.bankAccountNumber = '108876543210',
-    this.bankAccountName = 'NGUYEN THU HA',
+    this.hourlySalary = 0.0,
+    this.baseSalary = 0.0,
+    this.bankName = '',
+    this.bankAccountNumber = '',
+    this.bankAccountName = '',
+    this.avatarUrl,
+    this.cccdFrontUrl,
+    this.cccdBackUrl,
   });
 
   bool get isAdmin => role == 'admin';
