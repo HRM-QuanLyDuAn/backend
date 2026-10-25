@@ -49,7 +49,14 @@ export default function SoapTransactionsTable({
       header: "Mã Lệnh Chuyển Lương",
       render: (t) => (
         <div>
-          <div className="font-mono font-bold text-xs text-primary">{t.id}</div>
+          <div className="font-mono font-bold text-xs text-primary flex items-center gap-1.5">
+            {t.id}
+            {t.deduped && (
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                Trùng
+              </span>
+            )}
+          </div>
           <div className="text-[11px] text-gray-500 font-mono">Mã đối soát: {t.bankReference}</div>
         </div>
       ),

@@ -26,6 +26,8 @@ export interface SoapTransaction {
   soapAction: string;
   xmlPayload: string;
   xmlResponse: string;
+  /** Có khi backend trả deduped:true (trùng idempotencyKey) — dùng để hiện badge "Trùng". */
+  deduped?: boolean;
 }
 
 export interface SoapGatewayConfig {
@@ -35,7 +37,7 @@ export interface SoapGatewayConfig {
   port: number;
   securityMode: string;
   allowedIPs: string[];
-  status: "healthy" | "degraded" | "down";
+  status: "healthy" | "degraded" | "down" | "unknown";
   lastPingTime: string;
   avgResponseTime: string;
 }
