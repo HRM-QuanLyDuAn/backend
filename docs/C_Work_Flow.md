@@ -80,8 +80,8 @@ Mỗi service có `GET /health`, trả:
 
 ## 4. Danh sách việc của C
 
-### Task 1 — work-service (cổng 4003)
-- [ ] **Shifts (lịch ca / phân ca):**
+### Task 1 — work-service (cổng 4003) — ✅ XONG (PR `feat/work-service`)
+- [x] **Shifts (lịch ca / phân ca):**
   - `GET /api/shifts?branchSlug=&date=YYYY-MM-DD&employeeId=` — danh sách ca làm.
   - `POST /api/shifts` — tạo ca mới (admin/manager).
   - `PUT /api/shifts/:id` — cập nhật ca (admin/manager).
@@ -89,17 +89,17 @@ Mỗi service có `GET /health`, trả:
   - `POST /api/shifts/:id/assign` — phân công ca cho nhân viên (`shift_assignment`).
   - `POST /api/shifts/register` — nhân viên tự đăng ký ca (`schedule_registration`).
   - `GET /api/shifts/registrations?branchSlug=&week=` — danh sách đăng ký ca của nhân viên (phục vụ bảng "Quản lý đăng ký ca" trên web) **(suy ra)**.
-- [ ] **Attendance (chấm công):**
-  - `POST /api/attendance/checkin` — check-in vào ca.
-  - `POST /api/attendance/checkout` — check-out ra ca, tự động tính phạt vi phạm.
-  - `GET /api/attendance?employeeId=&month=YYYY-MM` — lịch sử chấm công cá nhân.
+- [x] **Attendance (chấm công):**
+  - `POST /api/attendance/checkin` (và `POST /api/attendance`) — check-in vào ca, tự động tính phạt vi phạm nếu đi muộn.
+  - `POST /api/attendance/checkout` (và `PUT /api/attendance/:id`) — check-out ra ca, tự động tính phạt vi phạm nếu về sớm.
+  - `GET /api/attendance?employeeId=&month=YYYY-MM` — lịch sử chấm công cá nhân / đầu vào tính lương.
   - `GET /api/attendance?branchSlug=&date=YYYY-MM-DD` — giám sát chấm công nhân sự theo ngày (`staff_monitor`).
   - `GET /api/attendance/config` — lấy cấu hình phạt vi phạm.
   - `PUT /api/attendance/config` — cập nhật cấu hình phạt (admin).
-- [ ] **Tasks (tác vụ công việc):**
+- [x] **Tasks (tác vụ công việc):**
   - `GET /api/tasks?branchSlug=&assignedTo=&status=` — danh sách tác vụ.
   - `POST /api/tasks`, `PUT /api/tasks/:id`, `DELETE /api/tasks/:id` — CRUD tác vụ.
-- [ ] `GET /health`.
+- [x] `GET /health`.
 
 ### Task 2 — integration-service (cổng 4005) — ✅ XONG (PR `feat/integration-service`)
 - [x] **SOAP Bank Gateway:**
