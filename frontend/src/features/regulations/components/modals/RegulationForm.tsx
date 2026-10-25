@@ -23,11 +23,12 @@ export interface RegulationFormInput {
 interface Props {
   initial: Regulation | null;
   defaultCode?: string;
+  saving?: boolean;
   onClose: () => void;
   onSave: (input: RegulationFormInput) => void;
 }
 
-export default function RegulationFormModal({ initial, defaultCode = "", onClose, onSave }: Props) {
+export default function RegulationFormModal({ initial, defaultCode = "", saving = false, onClose, onSave }: Props) {
   const [formCode, setFormCode] = useState(initial?.code ?? defaultCode);
   const [formTitle, setFormTitle] = useState(initial?.title ?? "");
   const [formCategory, setFormCategory] = useState<RegulationCategory>(initial?.category ?? "Nội quy lao động");
@@ -68,11 +69,11 @@ export default function RegulationFormModal({ initial, defaultCode = "", onClose
       size="lg"
       footer={
         <div className="flex justify-end gap-2 w-full">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Hủy
           </Button>
-          <Button variant="primary" onClick={handleSave}>
-            {initial ? "Lưu thay đổi" : "Ban hành nội quy"}
+          <Button variant="primary" onClick={handleSave} disabled={saving}>
+            {saving ? "Đang lưu..." : initial ? "Lưu thay đổi" : "Ban hành nội quy"}
           </Button>
         </div>
       }
