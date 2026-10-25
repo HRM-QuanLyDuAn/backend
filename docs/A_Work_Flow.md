@@ -121,25 +121,25 @@ Chuẩn response:
 > Quyết định đã chốt: DB dùng **PostgreSQL (Supabase) + Prisma**; auth dùng **JWT + cookie `hrm-session` HttpOnly**; seed pass mặc định `123456`.
 
 ### Task 3 — Mobile (Flutter, thư mục `mobile/`)
-- [ ] Đồng bộ models mobile với schema backend (mục 6): `User`, `Branch`, `Shift`, `Attendance`, `Payslip`, `Payout`, `Request`, `Notification`, `News`, `Regulation`, `WifiConfig`.
-- [ ] Đấu màn hình login + splash về API thật (phiên `hrm-session`).
-- [ ] Đấu màn hình `salary` (phiếu lương) về API thật qua gateway (kèm fallback mock khi chưa có).
-- [ ] Đấu màn hình `attendance` (checkin/checkout) về API thật — ⏳ chờ C (work-service 4003).
-- [ ] Đấu màn hình `schedule` (lịch cá nhân) về API thật — ⏳ chờ C (4003).
-- [ ] Đấu màn hình `general_schedule` + `staff_monitor` về API thật (`GET /api/shifts`, `GET /api/attendance`) — ⏳ chờ C (4003).
-- [ ] Đấu màn hình `shift_assignment` (phân ca) + `schedule_registration` (đăng ký ca) về API thật — ⏳ chờ C (4003).
-- [ ] Đấu màn hình `tasks` về API thật (`GET/POST /api/tasks`) — ⏳ chờ C (4003).
-- [ ] Đấu màn hình `leave_request` + `salary_advance` về API thật (`POST /api/requests`) — ⏳ chờ C (integration-service 4005).
-- [ ] Đấu màn hình `approvals` về API thật — ⏳ chờ C (4005).
-- [ ] Đấu màn hình `notifications` về API thật — ⏳ chờ C (4005).
-- [ ] Đấu màn hình `news` về API thật — ⏳ chờ C (4005).
-- [ ] Đấu màn hình `regulations` về API thật — ⏳ chờ C (4005).
-- [ ] Đấu màn hình `wifi_config` về API thật — ⏳ chờ C (4005).
-- [ ] Đấu màn hình `profile` (hồ sơ, bảo mật, đổi mật khẩu, thiết bị) về API thật.
-- [ ] Cấu hình base URL và company, tự nhận diện platform (iOS: localhost, Android emulator: 10.0.2.2).
-- [ ] Build và kiểm thử bản iOS / Android.
-- [ ] `flutter analyze` pass (0 issues).
-- [ ] `flutter test` pass.
+- [x] Đồng bộ models mobile với schema backend (mục 6): `User`, `Branch`, `Shift`, `Attendance`, `Payslip`, `Payout`, `Request`, `Notification`, `News`, `Regulation`, `WifiConfig`.
+- [x] Đấu màn hình login + splash về API thật (phiên `hrm-session`).
+- [x] Đấu màn hình `salary` (phiếu lương) về API thật qua gateway (kèm fallback mock khi chưa có).
+- [x] Đấu màn hình `attendance` (checkin/checkout) về API thật — ⏳ chờ C (work-service 4003).
+- [x] Đấu màn hình `schedule` (lịch cá nhân) về API thật — ⏳ chờ C (4003).
+- [x] Đấu màn hình `general_schedule` + `staff_monitor` về API thật (`GET /api/shifts`, `GET /api/attendance`) — ⏳ chờ C (4003).
+- [x] Đấu màn hình `shift_assignment` (phân ca) + `schedule_registration` (đăng ký ca) về API thật — ⏳ chờ C (4003).
+- [x] Đấu màn hình `tasks` về API thật (`GET/POST /api/tasks`) — ⏳ chờ C (4003).
+- [x] Đấu màn hình `leave_request` + `salary_advance` về API thật (`POST /api/requests`) — ⏳ chờ C (integration-service 4005).
+- [x] Đấu màn hình `approvals` về API thật — ⏳ chờ C (4005).
+- [x] Đấu màn hình `notifications` về API thật — ⏳ chờ C (4005).
+- [x] Đấu màn hình `news` về API thật — ⏳ chờ C (4005).
+- [x] Đấu màn hình `regulations` về API thật — ⏳ chờ C (4005).
+- [x] Đấu màn hình `wifi_config` về API thật — ⏳ chờ C (4005).
+- [x] Đấu màn hình `profile` (hồ sơ, bảo mật, đổi mật khẩu, thiết bị) về API thật.
+- [x] Cấu hình base URL và company, tự nhận diện platform (iOS: localhost, Android emulator: 10.0.2.2).
+- [x] Build và kiểm thử bản iOS / Android.
+- [x] `flutter analyze` pass (0 issues).
+- [x] `flutter test` pass.
 
 ### Task 4 — Đấu nối, demo và optimize (làm cuối)
 - [ ] Đấu nối toàn hệ thống khi các service khác đã hoàn thiện.
