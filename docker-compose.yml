@@ -41,6 +41,63 @@ services:
       timeout: 5s
       retries: 5
 
+  db-work: # B — 4003
+    image: postgres:16-alpine
+    container_name: hrm-db-work
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hrm_work
+    ports:
+      - "5435:5432"
+    volumes:
+      - hrm-work-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-payroll: # D — 4004
+    image: postgres:16-alpine
+    container_name: hrm-db-payroll
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hrm_payroll
+    ports:
+      - "5436:5432"
+    volumes:
+      - hrm-payroll-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-integration: # E — 4005
+    image: postgres:16-alpine
+    container_name: hrm-db-integration
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hrm_integration
+    ports:
+      - "5437:5432"
+    volumes:
+      - hrm-integration-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   hrm-identity-pgdata:
   hrm-organization-pgdata:
+  hrm-work-pgdata:
+  hrm-payroll-pgdata:
+  hrm-integration-pgdata:
