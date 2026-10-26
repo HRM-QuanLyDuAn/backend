@@ -1,58 +1,131 @@
-# HRM Enterprise — Quản trị Nhân sự & Vận hành Ca kíp (On-Premises SOA)
+# HRM Enterprise — Core Server (Express Microservices SOA)
 
-Hệ thống quản trị nhân sự, phân ca, chấm công Wi-Fi và chi lương nội bộ cho doanh nghiệp chuỗi.
-Kiến trúc On-Premises SOA: Web Portal (Next.js) + Mobile App (Flutter) + Core Server (Express).
+Hệ thống Backend trung tâm cho nền tảng quản trị nhân sự **HRM Enterprise**. Được xây dựng theo kiến trúc **Hướng dịch vụ (SOA / Microservices)**, tuân thủ nguyên tắc **Database-per-Service** với 5 cơ sở dữ liệu PostgreSQL độc lập trên hạ tầng Docker.
 
-## Tài khoản thử nghiệm
+---
 
-| Vai trò | Email | Mật khẩu | Dùng ở |
-|---|---|---|---|
-| Admin — Trần Minh Tuấn | `admin@company.com` | `123456` | Web & Mobile |
-| Manager — Vũ Thành Công | `manager@company.com` | `123456` | Web & Mobile |
-| Staff — Nguyễn Thu Hà | `nhanvien@company.com` | `123456` | Mobile |
-
-Chi nhánh: HN-1 Hoàn Kiếm, HN-2 Cầu Giấy, DN-1 Đà Nẵng.
-
-## Cấu trúc
+## 🏗 Kiến trúc Hệ thống
 
 ```text
-hrm-enterprise/
-├── README.md
-├── docs/        # TECHS, RULES, AGENTS, SKILLS + Work_Flow từng thành viên
-├── frontend/   # Web Portal quản trị (Next.js 16 App Router + Tailwind v4)
-├── mobile/     # App nhân viên & quản lý (Flutter 3.x, Material 3)
-└── backend/    # Core Server nội bộ (Express: REST + SOAP chi lương)
+[ Client (Web Portal / Mobile App) ]
+                │
+                ▼ (HTTP REST / Cookies)
+     ┌──────────────────────┐
+     │  API Gateway (:4000) │  (Stateless, JWT Verify, Rate Limit, CORS)
+     └──────────┬───────────┘
+                │ Proxy nội bộ
+   ┌────────────┼────────────┬────────────┬────────────┐
+   ▼            ▼            ▼            ▼            ▼
+Identity   Organization     Work       Payroll    Integration
+ (:4001)      (:4002)      (:4003)     (:4004)      (:4005)
+   │            │            │            │            │
+   ▼            ▼            ▼            ▼            ▼
+Postgres     Postgres     Postgres     Postgres     Postgres
+ (5433)       (5434)       (5435)       (5436)       (5437)
 ```
 
-## Chạy dự án
+---
+
+## 📦 Danh sách Microservices
+
+| Service | Port | Database Container | Trách nhiệm chính |
+|---|:---:|---|---|
+| **API Gateway** | `4000` | *Không (Stateless)* | Cửa ngõ duy nhất, xác thực JWT tập trung, định tuyến proxy, rate limiting |
+| **Identity Service** | `4001` | `hrm-db-identity:5433` | Quản lý tài khoản, mã hóa mật khẩu bcrypt, phiên làm việc, thiết bị |
+| **Organization Service** | `4002` | `hrm-db-organization:5434` | Cơ cấu tổ chức, chi nhánh, phòng ban, thông tin nhân sự chi tiết |
+| **Work Service** | `4003` | `hrm-db-work:5435` | Ca làm việc mẫu, xếp ca, đăng ký ca, chấm công Wi-Fi, vi phạm, tác vụ |
+| **Payroll Service** | `4004` | `hrm-db-payroll:5436` | Tài khoản doanh nghiệp, tổng hợp công, bảng lương, lệnh chi tiền |
+| **Integration Service** | `4005` | `hrm-db-integration:5437` | SOAP WSDL ngân hàng, đơn từ, bảng tin, quy chế, Wi-Fi chi nhánh, upload ảnh |
+
+---
+
+## 🛠 Công nghệ sử dụng
+
+- **Runtime:** Node.js (>= 18.x)
+- **Framework:** Express.js
+- **ORM & Database:** Prisma ORM, PostgreSQL 16 Alpine
+- **Giao thức & Tích hợp:** HTTP REST API, SOAP/XML WSDL, JWT (`jsonwebtoken`), bcryptjs
+- **Hạ tầng:** Docker & Docker Compose (quản lý 5 cụm cơ sở dữ liệu độc lập)
+
+---
+
+## 🚀 Hướng dẫn Cài đặt & Khởi chạy
+
+### Bước 0: Khởi động 5 Database Containers bằng Docker Compose
+Dự án sử dụng cơ chế Database-per-Service. Mỗi service kết nối tới một node PostgreSQL độc lập trên các cổng từ `5433` đến `5437`.
 
 ```bash
-# 0. Hạ tầng DB local — 5 Postgres RIÊNG BIỆT (mỗi service 1 server/node/port riêng)
+# Khởi động toàn bộ 5 container DB trong nền
 docker compose up -d
-#   hrm-db-identity:5433 · hrm-db-organization:5434 · hrm-db-work:5435
-#   hrm-db-payroll:5436 · hrm-db-integration:5437
 
-# 1. Core Server — chạy từng service (4000..4005). Copy .env.example -> .env trước,
-#    rồi đồng bộ schema vào DB của chính service đó:
-cd backend/api-gateway && npm install && npm run dev            # 4000 (không DB)
-cd backend/identity-service && npm install && npx prisma db push && npm run dev    # 4001
-#   organization (4002), work (4003), payroll (4004), integration (4005) làm tương tự
-
-# 2. Web Portal (http://localhost:3000)
-cd frontend && npm install && npm run dev
-
-# 3. Mobile App
-cd mobile && flutter pub get && flutter run
+# Kiểm tra trạng thái các container
+docker compose ps
 ```
 
-## API Backend
+### Bước 1: Khởi động API Gateway (Port 4000)
+```bash
+cd backend/api-gateway
+npm install
+npm run dev
+```
 
-- `GET /health` — kiểm tra server
-- `GET /api/branches`, `GET /api/employees` — danh mục chi nhánh, nhân sự
-- `GET /api/payroll/bank-accounts`, `GET/POST /api/payroll/payouts` — tài khoản DN, tạo lệnh chi (chống trùng bằng `idempotencyKey`)
-- `GET /soap/payroll?wsdl` — lấy WSDL cho ngân hàng
-- `POST /soap/payroll` — ngân hàng gửi `PayoutRequest`, nhận `PayoutResponse` (XML)
+### Bước 2: Khởi động các Microservices (Mở các terminal riêng)
+Mỗi service đều có file `.env.example` chứa chuỗi kết nối chuẩn tới DB tương ứng.
 
-## Nghiệp vụ chi lương
+```bash
+# 1. Identity Service (Port 4001)
+cd backend/identity-service
+npm install
+npx prisma db push
+npm run dev
 
-Bảng lương chốt → tạo lệnh chi (REST/SOAP kèm `idempotencyKey`) → trích nợ TK công ty → ghi có TK nhân viên → sinh mã đối soát `BANK-*`. Không bắn push mobile khi chuyển tiền (nhân viên tự tra cứu qua SMS/App ngân hàng); thông báo chung do Admin/Manager đăng ở Bảng tin.
+# 2. Organization Service (Port 4002)
+cd backend/organization-service
+npm install
+npx prisma db push
+npm run dev
+
+# 3. Work Service (Port 4003)
+cd backend/work-service
+npm install
+npx prisma db push
+npm run dev
+
+# 4. Payroll Service (Port 4004)
+cd backend/payroll-service
+npm install
+npx prisma db push
+npm run dev
+
+# 5. Integration Service (Port 4005)
+cd backend/integration-service
+npm install
+npx prisma db push
+npm run dev
+```
+
+---
+
+## 🏦 Tích hợp Cổng Ngân hàng (SOAP Bank Simulator)
+
+Hệ thống tích hợp giả lập cổng ngân hàng phục vụ đối soát và chi lương tự động:
+- **Lấy WSDL:** `GET http://localhost:4005/soap/payroll?wsdl`
+- **Gửi lệnh chi (SOAP XML):** `POST http://localhost:4005/soap/payroll`
+- **Cơ chế chống trùng (Idempotency):** Mỗi lệnh chi bắt buộc kèm `idempotencyKey`. Nếu nhận trùng key, hệ thống trả về kết quả đối soát `BANK-*` đã lưu thay vì trừ tiền lần 2.
+
+---
+
+## 🔑 Tài khoản khởi tạo sẵn (Seed Data)
+
+| Email | Mật khẩu | Vai trò | Chức vụ |
+|---|---|---|---|
+| `admin@company.com` | `123456` | Admin | Giám đốc điều hành |
+| `manager@company.com` | `123456` | Manager | Quản lý chi nhánh HN-1 |
+| `nhanvien@company.com` | `123456` | Staff | Nhân viên thu ngân HN-1 |
+
+---
+
+## 🔗 Liên kết hệ thống HRM Enterprise
+
+- **Web Portal (Next.js):** [HRM-QuanLyDuAn/frontend](https://github.com/HRM-QuanLyDuAn/frontend)
+- **Mobile App (Flutter):** [HRM-QuanLyDuAn/mobile](https://github.com/HRM-QuanLyDuAn/mobile)
