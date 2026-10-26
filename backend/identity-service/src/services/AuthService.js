@@ -33,10 +33,9 @@ function toSafeUser(row) {
   };
 }
 
+// --- Truy xuất User (gộp từ UserRepository cũ) ---
 const SEED_DEFS = [
-  { id: "e-admin", email: "admin@company.com", name: "Trần Minh Tuấn", role: "admin", roleTitle: "Quản trị viên", branchSlug: null },
-  { id: "e-mgr-hn1", email: "manager@company.com", name: "Vũ Thành Công", role: "manager", roleTitle: "Quản lý Chi nhánh", branchSlug: "HN-1" },
-  { id: "e-staff-1", email: "nhanvien@company.com", name: "Nguyễn Thu Hà", role: "staff", roleTitle: "Nhân viên", branchSlug: "HN-1" },
+  { id: "NV-0001", email: "admin@company.com", name: "Trần Minh Tuấn", role: "admin", roleTitle: "Quản trị viên", branchSlug: null },
 ];
 
 const memoryUsers = SEED_DEFS.map((u) => ({

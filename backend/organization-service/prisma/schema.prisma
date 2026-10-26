@@ -14,7 +14,6 @@ model Branch {
   name      String
   slug      String   @unique
   address   String?
-  phone     String?
   manager   String?
   status    String   @default("hoạt động")
   staff     Int      @default(0)
@@ -44,14 +43,15 @@ model Employee {
   phone             String?
   gender            String?
   birthDate         String?
-  province          String?
-  ward              String?
-  street            String?
+  province          String?  // Tỉnh / Thành phố
+  ward              String?  // Phường
+  street            String?  // Số nhà / Tên đường
   cccd              String?
   issueDate         String?
   issuePlace        String?
   cccdFront         String?
   cccdBack          String?
+  avatar            String?
   branchSlug        String?
   department        String?
   role              String?

@@ -14,7 +14,7 @@ export interface Employee {
 
   // Địa chỉ hiện tại (đồng bộ mobile)
   province?: string;  // Tỉnh / Thành phố
-  ward?: string;      // Xã / Phường
+  ward?: string;      // Phường
   street?: string;    // Số nhà / Tên đường
 
   // Thông tin CCCD / Định danh (đồng bộ mobile)
@@ -23,6 +23,7 @@ export interface Employee {
   issuePlace?: string;  // Nơi cấp
   cccdFront?: string | boolean; // Trạng thái ảnh mặt trước
   cccdBack?: string | boolean;  // Trạng thái ảnh mặt sau
+  avatar?: string;              // Đường dẫn ảnh đại diện
 
   // Công tác & Phân quyền
   branch: string;
@@ -92,7 +93,6 @@ export interface Branch {
   name: string;
   slug: string;
   address: string;
-  phone: string;
   manager: string;
   status: "hoạt động" | "vô hiệu hóa";
   staff: number;
@@ -101,8 +101,8 @@ export interface Branch {
 export interface Department {
   id: string;
   name: string;
+  /** Mã phòng ban do hệ thống tự sinh (PB-0001), client không tự nhập. */
   code: string;
-  description?: string;
   manager: string;
   status: "hoạt động" | "tạm dừng";
   staff?: number;

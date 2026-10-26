@@ -30,8 +30,6 @@ router.get("/attendance/config", WorkController.getConfig);
 router.put("/attendance/config", WorkController.updateConfig);
 router.post("/attendance/checkin", WorkController.checkin);
 router.post("/attendance/checkout", WorkController.checkout);
-router.post("/attendance", WorkController.checkin);
-router.put("/attendance/:id", WorkController.checkout);
 router.get("/attendance", WorkController.listAttendance);
 
 // Tasks

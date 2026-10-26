@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Toast thông báo "Phiên làm việc hết hạn" — trượt vào từ góc phải trên */
+@keyframes hrm-toast-in {
+  from { opacity: 0; transform: translateX(24px) scale(0.96); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes hrm-toast-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to { opacity: 0; transform: translateX(24px) scale(0.96); }
+}
+.hrm-toast-anim { animation: hrm-toast-in 0.35s ease-out; }
+.hrm-toast-anim-exit { animation: hrm-toast-out 0.3s ease-in forwards; }
+
 /* ============================================================
    Design tokens — học từ Dasher UI (Bootstrap 5 theme), 
    chuyển sang Tailwind v4, màu chủ đạo: ĐỎ ĐÔ (burgundy)
