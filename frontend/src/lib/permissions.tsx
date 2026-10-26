@@ -4,6 +4,7 @@ import {
   faArrowRightArrowLeft,
   faBuildingColumns,
   faCalendarWeek,
+  faChartPie,
   faClipboardList,
   faCoins,
   faGavel,
@@ -20,6 +21,7 @@ export function buildMenuItems(role: string): SidebarGroup[] {
 
   const hrMenuItems = isAdmin
     ? [
+        { label: "Tổng quan Dashboard", href: "/dashboard", icon: <FontAwesomeIcon icon={faChartPie} fontSize={20} strokeWidth={1.5} /> },
         { label: "Nhân sự toàn công ty", href: "/dashboard/employees", icon: <FontAwesomeIcon icon={faUsers} fontSize={20} strokeWidth={1.5} /> },
         { label: "Quản lý Phòng ban", href: "/dashboard/departments", icon: <FontAwesomeIcon icon={faSitemap} fontSize={20} strokeWidth={1.5} /> },
         { label: "Quản lý Chi nhánh", href: "/dashboard/branches", icon: <FontAwesomeIcon icon={faStore} fontSize={20} strokeWidth={1.5} /> },
@@ -33,6 +35,7 @@ export function buildMenuItems(role: string): SidebarGroup[] {
         { label: "Cấu hình Wi-Fi", href: "/dashboard/wifi", icon: <FontAwesomeIcon icon={faWifi} fontSize={20} strokeWidth={1.5} /> },
       ]
     : [
+        { label: "Tổng quan Dashboard", href: "/dashboard", icon: <FontAwesomeIcon icon={faChartPie} fontSize={20} strokeWidth={1.5} /> },
         { label: "Nhân sự chi nhánh", href: "/dashboard/employees", icon: <FontAwesomeIcon icon={faUsers} fontSize={20} strokeWidth={1.5} /> },
         { label: "Cơ cấu Phòng ban", href: "/dashboard/departments", icon: <FontAwesomeIcon icon={faSitemap} fontSize={20} strokeWidth={1.5} /> },
         { label: "Phân ca làm việc", href: "/dashboard/shifts", icon: <FontAwesomeIcon icon={faCalendarWeek} fontSize={20} strokeWidth={1.5} /> },
