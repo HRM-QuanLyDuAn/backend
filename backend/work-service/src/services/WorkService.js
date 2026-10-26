@@ -151,48 +151,18 @@ async function checkin({ employeeId, shiftId, time }) {
   const dd = String(now.getDate()).padStart(2, "0");
   const mm = String(now.getMonth() + 1).padStart(2, "0");
   const yyyy = now.getFullYear();
-  const inTime = time || `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-  const cfg = await getConfig();
-  const inMin = minutesOf(inTime);
-
-  let shiftStart = "08:00";
-  const prisma = database.getPrisma();
-  if (shiftId) {
-    if (prisma) {
-      try {
-        const s = await prisma.shift.findUnique({ where: { id: shiftId } });
-        if (s?.scheduledStart) shiftStart = s.scheduledStart;
-      } catch (_) {}
-    }
-    if (shiftStart === "08:00") {
-      const s = memoryShifts.find((m) => m.id === shiftId);
-      if (s?.scheduledStart) shiftStart = s.scheduledStart;
-    }
-  }
-
-  const startMin = minutesOf(shiftStart) ?? 8 * 60;
-  const grace = cfg.gracePeriodMinutes ?? 5;
-  let penalty = 0;
-  let status = "present";
-  let penaltyNote = null;
-
-  if (inMin !== null && inMin > startMin + grace) {
-    penalty = cfg.latePenaltyAmount || 20000;
-    status = "late";
-    penaltyNote = `Đi muộn ${inMin - startMin} phút`;
-  }
-
   const row = {
     id: uid("att"),
     employeeId,
     shiftId: shiftId || null,
     date: `${dd}-${mm}-${yyyy}`,
-    checkIn: inTime,
+    checkIn: time || `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
     checkOut: null,
-    penaltyAmount: penalty,
-    penaltyNote,
-    status,
+    penaltyAmount: 0,
+    penaltyNote: null,
+    status: "present",
   };
+  const prisma = database.getPrisma();
   if (prisma) {
     try {
       return await prisma.attendance.create({ data: row });
@@ -202,76 +172,44 @@ async function checkin({ employeeId, shiftId, time }) {
   return row;
 }
 
-async function checkout({ id, employeeId, shiftId, time }) {
+async function checkout({ employeeId, shiftId, time }) {
   const cfg = await getConfig();
   const prisma = database.getPrisma();
+  // Tìm bản ghi hôm nay chưa checkout
   let target = null;
   if (prisma) {
     try {
-      if (id) {
-        target = await prisma.attendance.findUnique({ where: { id } });
-      } else if (employeeId) {
-        const rows = await prisma.attendance.findMany({ where: { employeeId }, orderBy: { createdAt: "desc" } });
-        target = rows.find((r) => !r.checkOut) || null;
-      }
+      const rows = await prisma.attendance.findMany({ where: { employeeId }, orderBy: { createdAt: "desc" } });
+      target = rows.find((r) => !r.checkOut) || null;
       if (target) {
         const out = time || "17:30";
-        let shiftEnd = "17:00";
-        const sid = shiftId || target.shiftId;
-        if (sid) {
-          try {
-            const s = await prisma.shift.findUnique({ where: { id: sid } });
-            if (s?.scheduledEnd) shiftEnd = s.scheduledEnd;
-          } catch (_) {}
-        }
-        const endMin = minutesOf(shiftEnd) ?? 17 * 60;
+        // Phạt đơn giản: checkout rỗng -> về sớm nếu có giờ chuẩn? Giữ tối thiểu: không phạt khi đủ, phạt earlyLeave khi time < 17:00
+        let penalty = 0;
+        let status = "present";
         const outMin = minutesOf(out);
-        let penalty = target.penaltyAmount || 0;
-        let status = target.status || "present";
-        let penaltyNote = target.penaltyNote || null;
-        if (outMin !== null && outMin < endMin) {
-          penalty += cfg.earlyLeavePenaltyAmount || 20000;
-          status = status === "late" ? "late" : "early_leave";
-          penaltyNote = [penaltyNote, `Về sớm ${endMin - outMin} phút`].filter(Boolean).join("; ");
+        if (outMin !== null && outMin < 17 * 60) {
+          penalty = cfg.earlyLeavePenaltyAmount || 0;
+          status = "early_leave";
         }
-        return await prisma.attendance.update({
-          where: { id: target.id },
-          data: { checkOut: out, penaltyAmount: penalty, penaltyNote, status },
-        });
+        return await prisma.attendance.update({ where: { id: target.id }, data: { checkOut: out, penaltyAmount: penalty, status } });
       }
     } catch (_) {}
   }
-
-  if (id) {
-    target = memoryAttendances.find((r) => r.id === id) || null;
-  }
-  if (!target && employeeId) {
-    target = [...memoryAttendances].reverse().find((r) => r.employeeId === employeeId && !r.checkOut) || null;
-  }
+  target = [...memoryAttendances].reverse().find((r) => r.employeeId === employeeId && !r.checkOut) || null;
   const out = time || "17:30";
   if (!target) {
     const ci = await checkin({ employeeId, shiftId, time: "08:00" });
     target = ci;
   }
-  let shiftEnd = "17:00";
-  const sid = shiftId || target.shiftId;
-  if (sid) {
-    const s = memoryShifts.find((m) => m.id === sid);
-    if (s?.scheduledEnd) shiftEnd = s.scheduledEnd;
-  }
-  const endMin = minutesOf(shiftEnd) ?? 17 * 60;
+  let penalty = 0;
+  let status = "present";
   const outMin = minutesOf(out);
-  let penalty = target.penaltyAmount || 0;
-  let status = target.status || "present";
-  let penaltyNote = target.penaltyNote || null;
-  if (outMin !== null && outMin < endMin) {
-    penalty += cfg.earlyLeavePenaltyAmount || 20000;
-    status = status === "late" ? "late" : "early_leave";
-    penaltyNote = [penaltyNote, `Về sớm ${endMin - outMin} phút`].filter(Boolean).join("; ");
+  if (outMin !== null && outMin < 17 * 60) {
+    penalty = cfg.earlyLeavePenaltyAmount || 0;
+    status = "early_leave";
   }
   target.checkOut = out;
   target.penaltyAmount = penalty;
-  target.penaltyNote = penaltyNote;
   target.status = status;
   return target;
 }

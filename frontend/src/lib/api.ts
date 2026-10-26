@@ -21,7 +21,7 @@ export class GatewayError extends Error {
   }
 }
 
-async function parseEnvelope<T>(res: Response): Promise<T> {
+async function parseEnvelope(res: Response) {
   const text = await res.text();
   let body: unknown = null;
   try {
@@ -31,6 +31,10 @@ async function parseEnvelope<T>(res: Response): Promise<T> {
   }
   if (!res.ok) {
     const err = (body as { error?: ApiErrorShape } | null)?.error;
+    // 401 trên bất kỳ API nào qua gateway = phiên không còn — đá về login kèm thông báo.
+    if (res.status === 401 && err?.code === "UNAUTHORIZED") {
+      markSessionExpiredAndRedirect();
+    }
     throw new GatewayError(
       err?.code || `HTTP_${res.status}`,
       err?.message || `Lỗi hệ thống (${res.status})`,
@@ -38,9 +42,24 @@ async function parseEnvelope<T>(res: Response): Promise<T> {
     );
   }
   if (body !== null && typeof body === "object" && "data" in body) {
-    return (body as { data: T }).data;
+    return (body as { data: unknown }).data;
   }
-  return body as T;
+  return body;
+}
+
+/**
+ * Khi gateway trả 401 (hết phiên làm việc giữa chừng): đánh dấu cờ vào
+ * sessionStorage để trang login hiển thị toast, rồi đá về /login giữ ?from=.
+ */
+export function markSessionExpiredAndRedirect() {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem("hrm_session_expired", "1");
+    const next = window.location.pathname + window.location.search;
+    window.location.replace(`/login?from=${encodeURIComponent(next)}`);
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
@@ -51,7 +70,7 @@ export async function apiGet<T>(path: string): Promise<T> {
       credentials: "include",
       signal: controller.signal,
     });
-    return await parseEnvelope<T>(res);
+    return (await parseEnvelope(res)) as T;
   } finally {
     clearTimeout(timer);
   }
@@ -68,7 +87,7 @@ export async function apiPost<T>(path: string, payload: unknown): Promise<T> {
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-    return await parseEnvelope<T>(res);
+    return (await parseEnvelope(res)) as T;
   } finally {
     clearTimeout(timer);
   }
@@ -85,22 +104,7 @@ export async function apiPut<T>(path: string, payload?: unknown): Promise<T> {
       body: payload !== undefined ? JSON.stringify(payload) : undefined,
       signal: controller.signal,
     });
-    return await parseEnvelope<T>(res);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-export async function apiDelete<T>(path: string): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
-  try {
-    const res = await fetch(`${GATEWAY_URL}${path}`, {
-      method: "DELETE",
-      credentials: "include",
-      signal: controller.signal,
-    });
-    return await parseEnvelope<T>(res);
+    return (await parseEnvelope(res)) as T;
   } finally {
     clearTimeout(timer);
   }

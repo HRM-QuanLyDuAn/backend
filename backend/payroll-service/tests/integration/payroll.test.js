@@ -4,8 +4,6 @@ const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
 test("bank-accounts + payout idempotent + payslip generate", { timeout: 90000 }, async () => {
-  const database = require("../../src/config/database");
-  await database.connect();
   const app = require("../../src/app");
   const server = app.listen(0);
   await new Promise((r) => server.on("listening", r));

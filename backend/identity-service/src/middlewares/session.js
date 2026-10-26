@@ -33,24 +33,4 @@ function sessionMiddleware(req, _res, next) {
   }
 }
 
-/**
- * Middleware phân quyền theo 3 cấp độ: admin, manager, staff.
- * Sử dụng sau sessionMiddleware.
- * Trả về HTTP 403 nếu role người dùng không nằm trong danh sách cho phép.
- */
-function requireRole(...roles) {
-  return (req, _res, next) => {
-    if (!req.user) {
-      return next(new UnauthorizedError("Chưa xác thực"));
-    }
-    if (!roles.includes(req.user.role)) {
-      const err = new Error("Bạn không có quyền thực hiện thao tác này");
-      err.code = "FORBIDDEN";
-      err.status = 403;
-      return next(err);
-    }
-    return next();
-  };
-}
-
-module.exports = { sessionMiddleware, requireRole, COOKIE_NAME, extractToken };
+module.exports = { sessionMiddleware, COOKIE_NAME, extractToken };

@@ -76,13 +76,9 @@ async function listRegistrations(req, res, next) {
 
 async function checkin(req, res, next) {
   try {
-    const payload = {
-      ...req.body,
-      time: req.body.time || req.body.checkIn,
-    };
-    const errors = validateAttendance(payload);
+    const errors = validateAttendance(req.body);
     if (errors.length) throw new ValidationError(errors.join("; "));
-    const row = await WorkService.checkin(payload);
+    const row = await WorkService.checkin(req.body);
     return res.status(201).json({ data: row, message: "Chấm công vào thành công" });
   } catch (e) {
     return next(e);
@@ -91,15 +87,9 @@ async function checkin(req, res, next) {
 
 async function checkout(req, res, next) {
   try {
-    const payload = {
-      ...req.body,
-      id: req.params.id || req.body.id,
-      time: req.body.time || req.body.checkOut,
-    };
-    if (!payload.id && !payload.employeeId) {
-      throw new ValidationError("Thiếu employeeId hoặc id chấm công");
-    }
-    const row = await WorkService.checkout(payload);
+    const errors = validateAttendance(req.body);
+    if (errors.length) throw new ValidationError(errors.join("; "));
+    const row = await WorkService.checkout(req.body);
     return res.status(200).json({ data: row, message: "Chấm công ra thành công" });
   } catch (e) {
     return next(e);

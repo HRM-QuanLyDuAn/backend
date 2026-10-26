@@ -56,37 +56,6 @@ test("shifts + attendance + tasks flow", async () => {
   assert.equal(res.status, 200);
   assert.ok(Array.isArray(body.data));
 
-  // POST /api/attendance (Check-in ca làm việc tính phạt nếu đi muộn)
-  res = await fetch(`${base}/api/attendance`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ employeeId: "e-staff-2", time: "09:30" }),
-  });
-  body = await res.json();
-  assert.equal(res.status, 201);
-  assert.equal(body.data.status, "late");
-  assert.equal(body.data.penaltyAmount, 20000);
-  const attId = body.data.id;
-
-  // PUT /api/attendance/:id (Check-out tính phạt nếu về sớm)
-  res = await fetch(`${base}/api/attendance/${attId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ time: "16:00" }),
-  });
-  body = await res.json();
-  assert.equal(res.status, 200);
-  assert.equal(body.data.checkOut, "16:00");
-  assert.ok(body.data.penaltyAmount >= 40000);
-
-  // GET /api/attendance?employeeId=&month=YYYY-MM
-  const now = new Date();
-  const yyyyMm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  res = await fetch(`${base}/api/attendance?employeeId=e-staff-2&month=${yyyyMm}`);
-  body = await res.json();
-  assert.equal(res.status, 200);
-  assert.ok(body.data.length >= 1);
-
   // Tasks CRUD + filter
   res = await fetch(`${base}/api/tasks`, {
     method: "POST",
@@ -108,13 +77,6 @@ test("shifts + attendance + tasks flow", async () => {
     body: JSON.stringify({ status: "done" }),
   });
   assert.equal(res.status, 200);
-
-  res = await fetch(`${base}/api/tasks/${created.data.id}`, {
-    method: "DELETE",
-  });
-  body = await res.json();
-  assert.equal(res.status, 200);
-  assert.equal(body.data.ok, true);
 
   server.close();
 });

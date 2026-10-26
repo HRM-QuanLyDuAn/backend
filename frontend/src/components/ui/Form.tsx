@@ -36,18 +36,30 @@ export function Field({
 
 export function Input({
   className,
+  value,
   ...rest
 }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={getControlClass(className)} {...rest} />;
+  return (
+    <input
+      className={getControlClass(className)}
+      value={value === null ? "" : value}
+      {...rest}
+    />
+  );
 }
 
 export function Select({
   className,
   children,
+  value,
   ...rest
 }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
-    <select className={getControlClass(className)} {...rest}>
+    <select
+      className={getControlClass(className)}
+      value={value === null ? "" : value}
+      {...rest}
+    >
       {children}
     </select>
   );
@@ -55,10 +67,15 @@ export function Select({
 
 export function Textarea({
   className,
+  value,
   ...rest
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
-    <textarea className={cn(getControlClass(className), "min-h-24")} {...rest} />
+    <textarea
+      className={cn(getControlClass(className), "min-h-24")}
+      value={value === null ? "" : value}
+      {...rest}
+    />
   );
 }
 

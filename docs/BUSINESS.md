@@ -529,7 +529,7 @@ Theo dõi chi tiết các phiên làm việc của người dùng trên nhiều 
 #### 4. Dữ liệu Hạt giống Mặc định (Seed Data)
 Hệ thống tự động kích hoạt hàm `ensureSeeded()` khi khởi động server:
 - Tài khoản Quản trị viên Tối cao (Admin):
-  * `id`: `e-admin`
+  * `id`: `NV-0001`
   * `email`: `admin@company.com`
   * `name`: `Trần Minh Tuấn`
   * `password`: `123456` (Mã hóa bcrypt 10 rounds)
@@ -569,7 +569,7 @@ Hệ thống tự động kích hoạt hàm `ensureSeeded()` khi khởi động 
   {
     "data": {
       "user": {
-        "id": "e-admin",
+        "id": "NV-0001",
         "email": "admin@company.com",
         "name": "Trần Minh Tuấn",
         "role": "admin",
@@ -787,13 +787,14 @@ Dịch vụ sở hữu bộ kiểm thử tự động toàn diện qua thư vi�
 ### 4.2. Mô hình Dữ liệu & Lược đồ CSDL (`hrm_organization`)
 
 #### 1. Bảng Chi nhánh (`branches` - Prisma Model `Branch`)
+> Mã chi nhánh (`slug`) do hệ thống tự sinh dạng `CN-0001` (tăng dần), client không tự nhập.
+
 ```prisma
 model Branch {
   id        String   @id @default(cuid())
   name      String
   slug      String   @unique
   address   String?
-  phone     String?
   manager   String?
   status    String   @default("hoạt động")
   staff     Int      @default(0)
@@ -805,6 +806,8 @@ model Branch {
 ```
 
 #### 2. Bảng Phòng ban (`departments` - Prisma Model `Department`)
+> Mã phòng ban (`code`) do hệ thống tự sinh dạng `PB-0001` (tăng dần), client không tự nhập.
+
 ```prisma
 model Department {
   id          String   @id @default(cuid())
@@ -822,6 +825,8 @@ model Department {
 ```
 
 #### 3. Bảng Hồ sơ Nhân sự (`employees` - Prisma Model `Employee`)
+> Mã nhân viên (`id`) do hệ thống tự sinh dạng `NV-0001` (tăng dần), client không tự nhập.
+
 ```prisma
 model Employee {
   id                String   @id @default(cuid())
@@ -860,7 +865,7 @@ model Employee {
 #### 4. Dữ liệu Hạt giống Mặc định (Seed Data)
 Hệ thống tự động kích hoạt `ensureSeeded()` khi khởi động server:
 - Tự động đồng bộ tài khoản Quản trị viên tối cao:
-  * `id`: `e-admin`
+  * `id`: `NV-0001`
   * `name`: `Trần Minh Tuấn`
   * `email`: `admin@company.com`
   * `role`: `Quản trị viên`

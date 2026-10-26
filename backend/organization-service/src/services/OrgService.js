@@ -7,7 +7,7 @@ const { NotFoundError } = require("../utils/errors");
 const { syncEmployeeToIdentity } = require("../clients/IdentityClient");
 
 const seedEmployees = [
-  { id: "e-admin", name: "Trần Minh Tuấn", email: "admin@company.com", branchSlug: null, department: null, role: "Quản trị viên", systemRole: "admin", status: "đang làm", joinDate: "01-01-2024", baseSalary: 20000000, salaryType: "monthly" },
+  { id: "NV-0001", name: "Trần Minh Tuấn", email: "admin@company.com", branchSlug: null, department: null, role: "Quản trị viên", systemRole: "admin", status: "đang làm", joinDate: "01-01-2024", baseSalary: 20000000, salaryType: "monthly" },
 ];
 let memoryBranches = [];
 let memoryDepartments = [];
@@ -235,9 +235,10 @@ async function syncOrgRelations() {
   } catch (_) {}
 }
 
+// Mã chi nhánh (slug) do hệ thống tự sinh dạng CN-0001, client không được tự nhập.
 function sanitizeBranchPayload(payload = {}) {
   const data = {};
-  for (const key of ["name", "slug", "address", "phone", "status"]) {
+  for (const key of ["name", "address", "status"]) {
     if (payload[key] !== undefined) data[key] = payload[key];
   }
   if (typeof data.slug === "string") data.slug = data.slug.trim();
@@ -249,9 +250,10 @@ function sanitizeBranchPayload(payload = {}) {
 
 function sanitizeDepartmentPayload(payload = {}) {
   const data = {};
-  for (const key of ["name", "code", "status"]) {
+  for (const key of ["name", "status"]) {
     if (payload[key] !== undefined) data[key] = payload[key];
   }
+  // Mã phòng ban (code) do hệ thống tự sinh dạng PB-0001, client không được tự nhập.
   if (typeof data.code === "string") data.code = data.code.trim().toUpperCase();
   if (payload.manager !== undefined) {
     data.manager = sanitizeDepartmentManager(payload.manager);
@@ -348,16 +350,28 @@ async function createBranch(payload) {
   const prisma = database.getPrisma();
   if (prisma) {
     let created;
-    try {
-      created = await prisma.branch.create({ data });
-    } catch (e) {
-      if (String(e.code) === "P2002") {
-        const err = new Error("Slug chi nhánh đã tồn tại");
-        err.status = 409;
-        err.code = "DUPLICATE_RESOURCE";
-        throw err;
+    // Tạo tối đa 5 lần: trúng mã CN-xxxx trùng (đồng thời) -> sinh mã mới.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const branchSlug = await nextBranchSlug();
+      try {
+        created = await prisma.branch.create({ data: { ...data, slug: branchSlug } });
+        break;
+      } catch (e) {
+        if (String(e.code) === "P2002" && String(e.meta?.target || "").includes("slug")) continue;
+        if (String(e.code) === "P2002") {
+          const err = new Error("Dữ liệu chi nhánh đã tồn tại");
+          err.status = 409;
+          err.code = "DUPLICATE_RESOURCE";
+          throw err;
+        }
+        throw e;
       }
-      throw e;
+    }
+    if (!created) {
+      const err = new Error("Không thể sinh mã chi nhánh, vui lòng thử lại");
+      err.status = 409;
+      err.code = "DUPLICATE_RESOURCE";
+      throw err;
     }
     // Gán nhân sự quản lý vào chi nhánh vừa tạo + tính lại số nhân sự.
     await assignBranchManager(created);
@@ -365,12 +379,12 @@ async function createBranch(payload) {
     return (await prisma.branch.findUnique({ where: { slug: created.slug } })) || created;
   }
   if (memoryBranches.some((b) => b.slug === data.slug)) {
-    const err = new Error("Slug chi nhánh đã tồn tại");
+    const err = new Error("Dữ liệu chi nhánh đã tồn tại");
     err.status = 409;
     err.code = "DUPLICATE_RESOURCE";
     throw err;
   }
-  const row = { id: `br-${Date.now()}`, staff: 0, status: "hoạt động", ...data };
+  const row = { id: `br-${Date.now()}`, slug: await nextBranchSlug(), staff: 0, status: "hoạt động", ...data };
   memoryBranches.push(row);
   await assignBranchManager(row);
   await refreshAllStaffCounts();
@@ -489,16 +503,28 @@ async function createDepartment(payload) {
   const prisma = database.getPrisma();
   if (prisma) {
     let created;
-    try {
-      created = await prisma.department.create({ data });
-    } catch (e) {
-      if (String(e.code) === "P2002") {
-        const err = new Error("Mã phòng ban đã tồn tại");
-        err.status = 409;
-        err.code = "DUPLICATE_RESOURCE";
-        throw err;
+    // Tạo tối đa 5 lần: trúng mã PB-xxxx trùng (đồng thời) -> sinh mã mới.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const code = await nextDepartmentCode();
+      try {
+        created = await prisma.department.create({ data: { ...data, code } });
+        break;
+      } catch (e) {
+        if (String(e.code) === "P2002" && String(e.meta?.target || "").includes("code")) continue;
+        if (String(e.code) === "P2002") {
+          const err = new Error("Dữ liệu phòng ban đã tồn tại");
+          err.status = 409;
+          err.code = "DUPLICATE_RESOURCE";
+          throw err;
+        }
+        throw e;
       }
-      throw e;
+    }
+    if (!created) {
+      const err = new Error("Không thể sinh mã phòng ban, vui lòng thử lại");
+      err.status = 409;
+      err.code = "DUPLICATE_RESOURCE";
+      throw err;
     }
     // Gán nhân sự phụ trách vào phòng ban vừa tạo + tính lại số nhân sự.
     await assignDepartmentManager(created);
@@ -506,12 +532,12 @@ async function createDepartment(payload) {
     return (await prisma.department.findUnique({ where: { id: created.id } })) || created;
   }
   if (memoryDepartments.some((d) => d.code === data.code)) {
-    const err = new Error("Mã phòng ban đã tồn tại");
+    const err = new Error("Dữ liệu phòng ban đã tồn tại");
     err.status = 409;
     err.code = "DUPLICATE_RESOURCE";
     throw err;
   }
-  const row = { id: `dep-${Date.now()}`, staff: 0, status: "hoạt động", ...data };
+  const row = { id: `dep-${Date.now()}`, code: await nextDepartmentCode(), staff: 0, status: "hoạt động", ...data };
   memoryDepartments.push(row);
   await assignDepartmentManager(row);
   await refreshAllStaffCounts();
@@ -632,7 +658,7 @@ async function getEmployee(id) {
 // "Unknown argument" khi client gửi thêm field (vd: `branch` của frontend).
 const EMPLOYEE_FIELDS = [
   "name", "email", "phone", "gender", "birthDate", "province", "ward", "street",
-  "cccd", "issueDate", "issuePlace", "cccdFront", "cccdBack", "branchSlug",
+  "cccd", "issueDate", "issuePlace", "cccdFront", "cccdBack", "avatar", "branchSlug",
   "department", "role", "systemRole", "status", "joinDate", "baseSalary",
   "salaryType", "hourlySalary", "bankName", "bankAccountNumber", "bankAccountName",
 ];
@@ -648,11 +674,11 @@ function sanitizeEmployeePayload(payload = {}) {
     if (source[key] === undefined) continue;
     let value = source[key];
 
-    // cccdFront/cccdBack là cột String (đường dẫn ảnh). Client cũ gửi boolean
+    // cccdFront/cccdBack/avatar là cột String (đường dẫn ảnh). Client cũ gửi boolean
     // trạng thái "đã chụp" — bỏ qua thay vì ghi sai kiểu làm Prisma throw.
-    if (key === "cccdFront" || key === "cccdBack") {
-      if (typeof value !== "string" || !value) continue;
-      data[key] = value;
+    if (key === "cccdFront" || key === "cccdBack" || key === "avatar") {
+      if (typeof value === "boolean") continue;
+      data[key] = typeof value === "string" && value.trim() ? value.trim() : null;
       continue;
     }
 
@@ -677,6 +703,60 @@ function sanitizeEmployeePayload(payload = {}) {
   return data;
 }
 
+// Sinh mã theo chuỗi: quét các mã khớp "<prefix><4 số>" và trả về số lớn nhất + 1.
+async function nextCode({ prisma, memoryRows, field, prefix, fallbackRows }) {
+  let max = 0;
+  const scan = (raw) => {
+    const s = String(raw || "").trim().toUpperCase();
+    if (!s.startsWith(prefix)) return;
+    const n = Number(s.slice(prefix.length));
+    if (Number.isInteger(n) && n > max) max = n;
+  };
+  const scanRows = (rows) => (Array.isArray(rows) ? rows.forEach((r) => scan(r[field])) : null);
+  if (prisma) {
+    const rows = await prisma[fallbackRows]
+      .findMany({ where: { [field]: { startsWith: prefix } }, select: { [field]: true } })
+      .catch(() => []);
+    scanRows(rows);
+  } else {
+    scanRows(memoryRows);
+  }
+  return `${prefix}${String(max + 1).padStart(4, "0")}`;
+}
+
+// Sinh mã nhân viên gọn: NV-0001 (4 số, tăng dần theo mã lớn nhất hiện có).
+async function nextEmployeeId() {
+  return nextCode({
+    prisma: database.getPrisma(),
+    memoryRows: memoryEmployees,
+    field: "id",
+    prefix: "NV-",
+    fallbackRows: "employee",
+  });
+}
+
+// Sinh mã chi nhánh tự động: CN-0001 (dùng làm slug luôn).
+async function nextBranchSlug() {
+  return nextCode({
+    prisma: database.getPrisma(),
+    memoryRows: memoryBranches,
+    field: "slug",
+    prefix: "CN-",
+    fallbackRows: "branch",
+  });
+}
+
+// Sinh mã phòng ban tự động: PB-0001.
+async function nextDepartmentCode() {
+  return nextCode({
+    prisma: database.getPrisma(),
+    memoryRows: memoryDepartments,
+    field: "code",
+    prefix: "PB-",
+    fallbackRows: "department",
+  });
+}
+
 async function createEmployee(payload) {
   if (!["admin", "manager", "staff"].includes(payload.systemRole || "staff")) {
     const err = new Error("Vai trò hệ thống không hợp lệ");
@@ -688,16 +768,30 @@ async function createEmployee(payload) {
   const prisma = database.getPrisma();
   if (prisma) {
     let created;
-    try {
-      created = await prisma.employee.create({ data });
-    } catch (e) {
-      if (String(e.code) === "P2002") {
-        const err = new Error("Email đã tồn tại");
-        err.status = 409;
-        err.code = "DUPLICATE_RESOURCE";
-        throw err;
+    // Tạo tối đa 5 lần: nếu trúng id NV-xxxx trùng (đồng thời), tăng mã và thử lại.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const empId = await nextEmployeeId();
+      try {
+        created = await prisma.employee.create({ data: { ...data, id: empId } });
+        break;
+      } catch (e) {
+        if (String(e.code) === "P2002") {
+          const target = String(e.meta?.target || "");
+          if (target.includes("id")) continue; // trùng mã -> sinh mã mới
+          const err = new Error("Email đã tồn tại");
+          err.status = 409;
+          err.code = "DUPLICATE_RESOURCE";
+          throw err;
+        }
+        throw e;
       }
-      throw e;
+    }
+    // Nếu vòng lặp cạn (5 lần toàn trùng mã) coi như xung đột dữ liệu.
+    if (!created) {
+      const err = new Error("Không thể sinh mã nhân viên, vui lòng thử lại");
+      err.status = 409;
+      err.code = "DUPLICATE_RESOURCE";
+      throw err;
     }
     await refreshAllStaffCounts();
     syncEmployeeToIdentity(created, "upsert").catch(() => {});
@@ -709,7 +803,7 @@ async function createEmployee(payload) {
     err.code = "DUPLICATE_RESOURCE";
     throw err;
   }
-  const row = { id: `e-${Date.now()}`, status: "đang làm", salaryType: "monthly", baseSalary: 0, ...data };
+  const row = { id: await nextEmployeeId(), status: "đang làm", salaryType: "monthly", baseSalary: 0, ...data };
   memoryEmployees.push(row);
   await refreshAllStaffCounts();
   syncEmployeeToIdentity(row, "upsert").catch(() => {});

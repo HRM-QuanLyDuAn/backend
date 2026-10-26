@@ -53,3 +53,6 @@ dist/
 .env*
 !.env.example
 
+# Local notes
+Coding.md
+

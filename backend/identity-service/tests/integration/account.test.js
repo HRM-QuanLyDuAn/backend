@@ -4,8 +4,6 @@ const assert = require("node:assert/strict");
 const { test, describe, before, after } = require("node:test");
 const app = require("../../src/app");
 
-const database = require("../../src/config/database");
-
 describe("Identity Account Endpoints Integration", () => {
   let server;
   let baseUrl;
@@ -13,9 +11,6 @@ describe("Identity Account Endpoints Integration", () => {
   let refreshToken;
 
   before(async () => {
-    process.env.NODE_ENV = "test";
-    process.env.ALLOW_MEMORY_FALLBACK = "true";
-    await database.connect().catch(() => {});
     server = app.listen(0);
     await new Promise((r) => server.on("listening", r));
     baseUrl = `http://localhost:${server.address().port}`;
@@ -29,12 +24,11 @@ describe("Identity Account Endpoints Integration", () => {
     const setCookie = res.headers.get("set-cookie");
     cookieHeader = setCookie ? setCookie.split(";")[0] : "";
     const body = await res.json();
-    refreshToken = body?.data?.refreshToken;
+    refreshToken = body.data.refreshToken;
   });
 
-  after(async () => {
+  after(() => {
     if (server) server.close();
-    await database.disconnect().catch(() => {});
   });
 
   test("POST /api/auth/refresh cấp lại token hợp lệ", async () => {

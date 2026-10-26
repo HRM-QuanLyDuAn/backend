@@ -70,7 +70,6 @@ interface DashboardShellProps {
   userRole: string;
   notifications?: { id: string; title: string; content: string; time: string; read: boolean; tone?: string }[];
   logoutHref: string;
-  profileHref?: string;
   sidebarFooter?: { icon: React.ReactNode; text: string };
   rightExtra?: React.ReactNode;
   defaultCollapsed?: boolean;
@@ -83,7 +82,6 @@ function DashboardShellContent({
   userName,
   userRole,
   logoutHref,
-  profileHref,
   sidebarFooter,
   rightExtra,
   defaultCollapsed = true,
@@ -153,7 +151,6 @@ function DashboardShellContent({
           width={width}
           resizing={resizing}
           logoutHref={logoutHref}
-          profileHref={profileHref}
           rightExtra={rightExtra}
         />
         <main className="pt-4">{children}</main>

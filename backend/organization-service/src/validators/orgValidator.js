@@ -7,14 +7,14 @@ function isEmail(v) {
 function validateBranch(body = {}) {
   const errors = [];
   if (!body.name) errors.push("Tên chi nhánh là bắt buộc");
-  if (!body.slug) errors.push("Slug chi nhánh là bắt buộc");
+  // Mã chi nhánh (slug) do hệ thống tự sinh CN-0001, không yêu cầu từ client.
   return errors;
 }
 
 function validateDepartment(body = {}) {
   const errors = [];
   if (!body.name) errors.push("Tên phòng ban là bắt buộc");
-  if (!body.code) errors.push("Mã phòng ban là bắt buộc");
+  // Mã phòng ban (code) do hệ thống tự sinh PB-0001, không yêu cầu từ client.
   return errors;
 }
 

@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { Public_Sans } from "next/font/google";
+import "@fortawesome/fontawesome-svg-core/styles.css";
+import { config } from "@fortawesome/fontawesome-svg-core";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+
+config.autoAddCss = false;
 
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
