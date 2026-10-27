@@ -65,9 +65,15 @@ async function uploadImage(fileData, folder = "hrm") {
       }
 
       if (res.status === 200 && (parsed.secure_url || parsed.url)) {
+        const url = parsed.secure_url || parsed.url;
+        const publicId = parsed.public_id || "";
+        // Trả cả hai kiểu tên trường: `url`/`publicId` cho web-mobile hiện có và
+        // `secure_url`/`public_id` theo hợp đồng BUSINESS.md §7.5.
         return {
-          url: parsed.secure_url || parsed.url,
-          publicId: parsed.public_id || "",
+          url,
+          secure_url: url,
+          publicId,
+          public_id: publicId,
           format: parsed.format || "png",
           width: parsed.width || 0,
           height: parsed.height || 0,
