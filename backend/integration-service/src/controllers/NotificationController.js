@@ -76,6 +76,20 @@ async function markAsRead(req, res, next) {
   }
 }
 
+async function markAllAsRead(req, res, next) {
+  try {
+    const employeeId = req.query.employeeId || req.headers["x-user-id"] || null;
+    const branchSlug = req.query.branchSlug || req.headers["x-branch-slug"] || null;
+    const result = await NotificationService.markAllAsRead({ employeeId, branchSlug });
+    return res.status(200).json({
+      data: result,
+      message: "Đã đánh dấu tất cả thông báo là đã đọc",
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function deleteNotification(req, res, next) {
   try {
     const existing = await NotificationService.findById(req.params.id);
@@ -95,6 +109,7 @@ module.exports = {
   listNotifications,
   createNotification,
   markAsRead,
+  markAllAsRead,
   deleteNotification,
   getSettings,
   updateSettings,

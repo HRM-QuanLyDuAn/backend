@@ -92,4 +92,28 @@ describe("Identity Account Endpoints Integration", () => {
       body: JSON.stringify({ currentPassword: "654321", newPassword: "123456" }),
     });
   });
+
+  test("đăng nhập được bằng tài khoản seed manager và staff", async () => {
+    for (const [email, role] of [
+      ["manager@company.com", "manager"],
+      ["nhanvien@company.com", "staff"],
+    ]) {
+      const res = await fetch(`${baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: "123456" }),
+      });
+      const body = await res.json();
+      assert.equal(res.status, 200);
+      assert.equal(body.data.user.role, role);
+      assert.ok(body.data.accessToken);
+    }
+  });
+
+  test("refresh token không dùng được như access token", async () => {
+    const res = await fetch(`${baseUrl}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${refreshToken}` },
+    });
+    assert.equal(res.status, 401);
+  });
 });
