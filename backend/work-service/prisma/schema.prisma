@@ -1,0 +1,99 @@
+// Prisma schema — work-service
+// DB riêng hrm_work (single-tenant, không có tenantId).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Shift {
+  id             String   @id @default(cuid())
+  employeeId     String
+  branchSlug     String?
+  date           String
+  template       String?
+  scheduledStart String?
+  scheduledEnd   String?
+  checkIn        String?
+  checkOut       String?
+  status         String   @default("đang làm")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("shifts")
+}
+
+model Attendance {
+  id            String   @id @default(cuid())
+  employeeId    String
+  shiftId       String?
+  date          String
+  checkIn       String?
+  checkOut      String?
+  penaltyAmount Float    @default(0)
+  penaltyNote   String?
+  status        String   @default("present")
+  createdAt     DateTime @default(now())
+
+  @@map("attendances")
+}
+
+model AttendanceConfig {
+  id                      String @id @default("default")
+  latePenaltyAmount       Int    @default(20000)
+  earlyLeavePenaltyAmount Int    @default(0)
+  gracePeriodMinutes      Int    @default(5)
+  autoCloseShift          Boolean @default(false)
+  shiftSwapMode           String @default("manual")
+  latePenaltyPct          Int    @default(10)
+  earlyLeavePenaltyPct    Int    @default(10)
+  earlyCheckinMinutes     Int    @default(15)
+  maxPenaltiesPerMonth    Int    @default(10)
+  deductOnCheckout        Boolean @default(true)
+  allowDoubleCheckin      Boolean @default(true)
+  maxCheckinsPerDay       Int    @default(3)
+  maxSwapsPerMonth        Int    @default(3)
+  requireReasonSwap       Boolean @default(true)
+
+  @@map("attendance_configs")
+}
+
+model ShiftTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("shift_templates")
+}
+
+model ShiftRegistration {
+  id         String   @id @default(cuid())
+  employeeId String
+  branchSlug String?
+  week       String?
+  shiftId    String?
+  wish       String?
+  createdAt  DateTime @default(now())
+
+  @@map("shift_registrations")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  assignedTo  String?
+  branchSlug  String?
+  dueDate     String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tasks")
+}

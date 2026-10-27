@@ -1,0 +1,24 @@
+// Prisma schema — identity-service
+// DB dùng chung Supabase Postgres (single-tenant, không có tenantId).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("staff") // admin | manager | staff
+  roleTitle    String   @default("Nhân viên")
+  branchSlug   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}

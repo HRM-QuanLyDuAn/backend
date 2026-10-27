@@ -1,0 +1,103 @@
+services:
+  # Mỗi service nghiệp vụ có 1 Postgres RIÊNG BIỆT (server/node/volume/port độc lập) —
+  # database-per-service thật sự ở mức hạ tầng: 1 DB sập không kéo theo 4 DB còn lại.
+  # Đây chỉ là hạ tầng DB local để dev/test; app service chạy ngoài Docker bằng `npm run dev`.
+  # Production: mỗi service trỏ 1 link Supabase riêng qua DATABASE_URL (xem .env.example từng service).
+
+  db-identity: # A — 4001
+    image: postgres:16-alpine
+    container_name: hrm-db-identity
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hrm_identity
+    ports:
+      # Host dùng 5433..5437 để né container Postgres của dự án khác đang chiếm 5432.
+      - "5433:5432"
+    volumes:
+      - hrm-identity-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-organization: # B — 4002
+    image: postgres:16-alpine
+    container_name: hrm-db-organization
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hrm_organization
+    ports:
+      - "5434:5432"
+    volumes:
+      - hrm-organization-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-work: # B — 4003
+    image: postgres:16-alpine
+    container_name: hrm-db-work
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hrm_work
+    ports:
+      - "5435:5432"
+    volumes:
+      - hrm-work-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-payroll: # D — 4004
+    image: postgres:16-alpine
+    container_name: hrm-db-payroll
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hrm_payroll
+    ports:
+      - "5436:5432"
+    volumes:
+      - hrm-payroll-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-integration: # E — 4005
+    image: postgres:16-alpine
+    container_name: hrm-db-integration
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hrm_integration
+    ports:
+      - "5437:5432"
+    volumes:
+      - hrm-integration-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  hrm-identity-pgdata:
+  hrm-organization-pgdata:
+  hrm-work-pgdata:
+  hrm-payroll-pgdata:
+  hrm-integration-pgdata:

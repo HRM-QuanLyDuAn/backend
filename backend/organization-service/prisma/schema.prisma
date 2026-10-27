@@ -1,0 +1,71 @@
+// Prisma schema — organization-service
+// DB riêng hrm_organization (single-tenant, không có tenantId).
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  address   String?
+  manager   String?
+  status    String   @default("hoạt động")
+  staff     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("branches")
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  manager   String?
+  status    String   @default("hoạt động")
+  staff     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("departments")
+}
+
+model Employee {
+  id                String   @id @default(cuid())
+  name              String
+  email             String   @unique
+  phone             String?
+  gender            String?
+  birthDate         String?
+  province          String?  // Tỉnh / Thành phố
+  ward              String?  // Phường
+  street            String?  // Số nhà / Tên đường
+  cccd              String?
+  issueDate         String?
+  issuePlace        String?
+  cccdFront         String?
+  cccdBack          String?
+  avatar            String?
+  branchSlug        String?
+  department        String?
+  role              String?
+  systemRole        String   @default("staff")
+  status            String   @default("đang làm")
+  joinDate          String?
+  baseSalary        Float    @default(0)
+  salaryType        String   @default("monthly")
+  hourlySalary      Float?
+  bankName          String?
+  bankAccountNumber String?
+  bankAccountName   String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("employees")
+}
