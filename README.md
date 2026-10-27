@@ -28,14 +28,14 @@ Postgres     Postgres     Postgres     Postgres     Postgres
 
 ## 📦 Danh sách Microservices
 
-| Service | Port | Database Container | Trách nhiệm chính |
-|---|:---:|---|---|
-| **API Gateway** | `4000` | *Không (Stateless)* | Cửa ngõ duy nhất, xác thực JWT tập trung, định tuyến proxy, rate limiting |
-| **Identity Service** | `4001` | `hrm-db-identity:5433` | Quản lý tài khoản, mã hóa mật khẩu bcrypt, phiên làm việc, thiết bị |
-| **Organization Service** | `4002` | `hrm-db-organization:5434` | Cơ cấu tổ chức, chi nhánh, phòng ban, thông tin nhân sự chi tiết |
-| **Work Service** | `4003` | `hrm-db-work:5435` | Ca làm việc mẫu, xếp ca, đăng ký ca, chấm công Wi-Fi, vi phạm, tác vụ |
-| **Payroll Service** | `4004` | `hrm-db-payroll:5436` | Tài khoản doanh nghiệp, tổng hợp công, bảng lương, lệnh chi tiền |
-| **Integration Service** | `4005` | `hrm-db-integration:5437` | SOAP WSDL ngân hàng, đơn từ, bảng tin, quy chế, Wi-Fi chi nhánh, upload ảnh |
+| Service | Port | Database Container | Database Port | Trách nhiệm chính |
+|---|:---:|---|:---:|---|
+| **API Gateway** | `4000` | *Không (Stateless)* | - | Cửa ngõ duy nhất, xác thực JWT tập trung, định tuyến proxy, rate limiting |
+| **Identity Service** | `4001` | `hrm-db-identity` | `5433` | Quản lý tài khoản, mã hóa mật khẩu bcrypt, phiên làm việc, thiết bị |
+| **Organization Service** | `4002` | `hrm-db-organization` | `5434` | Cơ cấu tổ chức, chi nhánh, phòng ban, thông tin nhân sự chi tiết |
+| **Work Service** | `4003` | `hrm-db-work` | `5435` | Ca làm việc mẫu, xếp ca, đăng ký ca, chấm công Wi-Fi, vi phạm, tác vụ |
+| **Payroll Service** | `4004` | `hrm-db-payroll` | `5436` | Tài khoản doanh nghiệp, tổng hợp công, bảng lương, lệnh chi tiền |
+| **Integration Service** | `4005` | `hrm-db-integration` | `5437` | SOAP WSDL ngân hàng, đơn từ, bảng tin, quy chế, Wi-Fi chi nhánh, upload ảnh |
 
 ---
 
@@ -49,6 +49,35 @@ Postgres     Postgres     Postgres     Postgres     Postgres
 
 ---
 
+## 🌳 Cấu trúc Thư mục Repository
+
+```text
+backend/
+├── docker-compose.yml          # Hạ tầng 5 container PostgreSQL độc lập
+├── docs/                       # Tài liệu thiết kế kiến trúc SOA & quy trình nghiệp vụ
+└── backend/                    # Mã nguồn các Microservices
+    ├── api-gateway/            # API Gateway trung tâm (:4000)
+    │   ├── src/                # Middleware proxy, rate limiter, JWT verify
+    │   └── server.js
+    ├── identity-service/       # Identity Service (:4001)
+    │   ├── prisma/             # Schema & Seed tài khoản
+    │   └── src/                # Controller, Service, Validator, Routes
+    ├── organization-service/   # Organization Service (:4002)
+    │   ├── prisma/             # Schema chi nhánh, phòng ban, hồ sơ nhân sự
+    │   └── src/
+    ├── work-service/           # Work Service (:4003)
+    │   ├── prisma/             # Schema ca kíp, chấm công, vi phạm
+    │   └── src/
+    ├── payroll-service/        # Payroll Service (:4004)
+    │   ├── prisma/             # Schema bảng lương, tính lương, chi trả
+    │   └── src/
+    └── integration-service/    # Integration Service (:4005)
+        ├── prisma/             # Schema đơn từ, thông báo, quy chế, Wi-Fi
+        └── src/                # SOAP Bank Simulator, REST APIs
+```
+
+---
+
 ## 🚀 Hướng dẫn Cài đặt & Khởi chạy
 
 ### Bước 0: Khởi động 5 Database Containers bằng Docker Compose
@@ -58,50 +87,68 @@ Dự án sử dụng cơ chế Database-per-Service. Mỗi service kết nối t
 # Khởi động toàn bộ 5 container DB trong nền
 docker compose up -d
 
-# Kiểm tra trạng thái các container
+# Kiểm tra trạng thái các container (đảm bảo cả 5 container đều Up)
 docker compose ps
 ```
 
 ### Bước 1: Khởi động API Gateway (Port 4000)
 ```bash
 cd backend/api-gateway
+cp .env.example .env
 npm install
 npm run dev
 ```
 
 ### Bước 2: Khởi động các Microservices (Mở các terminal riêng)
-Mỗi service đều có file `.env.example` chứa chuỗi kết nối chuẩn tới DB tương ứng.
+Mỗi service đều có file `.env.example` chứa chuỗi kết nối chuẩn tới DB tương ứng. Hãy copy `.env.example` thành `.env`, sau đó tiến hành push schema và nạp dữ liệu mẫu:
 
 ```bash
 # 1. Identity Service (Port 4001)
 cd backend/identity-service
+cp .env.example .env
 npm install
 npx prisma db push
+node prisma/seed.js
 npm run dev
 
 # 2. Organization Service (Port 4002)
 cd backend/organization-service
+cp .env.example .env
 npm install
 npx prisma db push
+node prisma/seed.js
 npm run dev
 
 # 3. Work Service (Port 4003)
 cd backend/work-service
+cp .env.example .env
 npm install
 npx prisma db push
+node prisma/seed.js
 npm run dev
 
 # 4. Payroll Service (Port 4004)
 cd backend/payroll-service
+cp .env.example .env
 npm install
 npx prisma db push
+node prisma/seed.js
 npm run dev
 
 # 5. Integration Service (Port 4005)
 cd backend/integration-service
+cp .env.example .env
 npm install
 npx prisma db push
 npm run dev
+```
+
+### Bước 3: Chạy Kiểm thử (Tests)
+Từng microservice được tích hợp bộ unit test và integration test với Jest:
+
+```bash
+# Chạy test trong thư mục của service tương ứng
+npm test
 ```
 
 ---
@@ -125,7 +172,7 @@ Hệ thống tích hợp giả lập cổng ngân hàng phục vụ đối soát
 
 ---
 
-## 🔗 Liên kết hệ thống HRM Enterprise
+## 🔗 Liên kết hệ sinh thái HRM Enterprise
 
 - **Web Portal (Next.js):** [HRM-QuanLyDuAn/frontend](https://github.com/HRM-QuanLyDuAn/frontend)
 - **Mobile App (Flutter):** [HRM-QuanLyDuAn/mobile](https://github.com/HRM-QuanLyDuAn/mobile)
