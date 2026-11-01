@@ -1,0 +1,1572 @@
+openapi: 3.0.3
+info:
+  title: HRM Enterprise — API Contract & Developer Portal
+  version: 1.0.0
+  description: |
+    # Cổng Hợp Đồng Giao Tiếp API (API Contract)
+    Tài liệu đặc tả hợp đồng API tập trung cho hệ sinh thái **HRM Enterprise** (Next.js Web Portal, Flutter Mobile App, và các đối tác bên ngoài).
+    
+    Tất cả các lệnh gọi API từ bên ngoài đều đi qua **API Gateway** tại cổng `http://localhost:4000`.
+    
+    ### Cơ chế Xác thực (Authentication):
+    - **Header:** `Authorization: Bearer <access_token>`
+    - **Cookie:** Phiên cookie `hrm-session` (tự động đính kèm trên trình duyệt web).
+    
+    *Bấm nút **Authorize** ở góc trên bên phải để nạp JWT Token và gọi thử trực tiếp.*
+servers:
+  - url: http://localhost:4000
+    description: API Gateway (Môi trường phát triển cục bộ)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Nhập Access Token JWT (lấy từ endpoint /api/auth/login).
+    CookieAuth:
+      type: apiKey
+      in: cookie
+      name: hrm-session
+      description: Cookie phiên làm việc hrm-session.
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          description: Dữ liệu trả về
+        message:
+          type: string
+          example: Thao tác thành công
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: BAD_REQUEST
+            message:
+              type: string
+              example: Dữ liệu không hợp lệ
+            details:
+              type: array
+              items:
+                type: string
+
+    # Schemas - Auth
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@company.com
+        password:
+          type: string
+          example: "123456"
+        deviceName:
+          type: string
+          example: "Chrome on macOS"
+        ipAddress:
+          type: string
+          example: "127.0.0.1"
+
+    LoginResponseData:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              example: "emp-001"
+            email:
+              type: string
+              example: "admin@company.com"
+            role:
+              type: string
+              example: "admin"
+        accessToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        refreshToken:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    ChangePasswordRequest:
+      type: object
+      required: [oldPassword, newPassword]
+      properties:
+        oldPassword:
+          type: string
+          example: "123456"
+        newPassword:
+          type: string
+          example: "NewSecretPassword@123"
+
+    # Schemas - Organization
+    BranchInput:
+      type: object
+      required: [name, slug, address]
+      properties:
+        name:
+          type: string
+          example: "Chi nhánh Hà Nội 1"
+        slug:
+          type: string
+          example: "hn-1"
+        address:
+          type: string
+          example: "123 Cầu Giấy, Hà Nội"
+        phone:
+          type: string
+          example: "0243123456"
+
+    DepartmentInput:
+      type: object
+      required: [name, branchSlug]
+      properties:
+        name:
+          type: string
+          example: "Phòng Công nghệ Thông tin"
+        branchSlug:
+          type: string
+          example: "hn-1"
+        managerId:
+          type: string
+          nullable: true
+
+    EmployeeInput:
+      type: object
+      required: [fullName, email, branchSlug, departmentId, role]
+      properties:
+        fullName:
+          type: string
+          example: "Nguyễn Văn A"
+        email:
+          type: string
+          format: email
+          example: "a.nguyen@company.com"
+        phone:
+          type: string
+          example: "0987654321"
+        branchSlug:
+          type: string
+          example: "hn-1"
+        departmentId:
+          type: string
+          example: "dept-tech"
+        role:
+          type: string
+          enum: [admin, manager, staff]
+          example: "staff"
+        position:
+          type: string
+          example: "Nhân viên phát triển"
+        salaryBase:
+          type: number
+          example: 15000000
+
+    # Schemas - Work
+    ShiftTemplateInput:
+      type: object
+      required: [name, startTime, endTime, branchSlug]
+      properties:
+        name:
+          type: string
+          example: "Ca Sáng Hành Chính"
+        startTime:
+          type: string
+          example: "08:00"
+        endTime:
+          type: string
+          example: "17:30"
+        branchSlug:
+          type: string
+          example: "hn-1"
+
+    ShiftInput:
+      type: object
+      required: [templateId, date, branchSlug]
+      properties:
+        templateId:
+          type: string
+          example: "tpl-morning"
+        date:
+          type: string
+          format: date
+          example: "2026-11-02"
+        employeeId:
+          type: string
+          nullable: true
+          example: "emp-001"
+        branchSlug:
+          type: string
+          example: "hn-1"
+
+    AttendanceCheckinInput:
+      type: object
+      required: [bssid, employeeId]
+      properties:
+        employeeId:
+          type: string
+          example: "emp-001"
+        bssid:
+          type: string
+          example: "00:11:22:33:44:55"
+        notes:
+          type: string
+          example: "Vào ca làm việc"
+
+    TaskInput:
+      type: object
+      required: [title, employeeId]
+      properties:
+        title:
+          type: string
+          example: "Báo cáo doanh thu tháng"
+        description:
+          type: string
+          example: "Tổng hợp số liệu từ các chi nhánh"
+        employeeId:
+          type: string
+          example: "emp-001"
+        dueDate:
+          type: string
+          format: date-time
+          example: "2026-11-10T18:00:00Z"
+        status:
+          type: string
+          enum: [PENDING, IN_PROGRESS, COMPLETED, CANCELLED]
+          example: "PENDING"
+
+    # Schemas - Payroll
+    BankAccountInput:
+      type: object
+      required: [bankName, accountNumber, accountHolder]
+      properties:
+        bankName:
+          type: string
+          example: "Vietcombank"
+        accountNumber:
+          type: string
+          example: "012345678999"
+        accountHolder:
+          type: string
+          example: "CÔNG TY CỔ PHẦN CÔNG NGHỆ HRM"
+        branch:
+          type: string
+          example: "Chi nhánh Ba Đình"
+
+    PayoutInput:
+      type: object
+      required: [idempotencyKey, payslipId, amount, receiverAccount, receiverBank, receiverName]
+      properties:
+        idempotencyKey:
+          type: string
+          example: "PAYOUT-202611-EMP001"
+        payslipId:
+          type: string
+          example: "slip-202611-001"
+        amount:
+          type: number
+          example: 18500000
+        receiverBank:
+          type: string
+          example: "MBBank"
+        receiverAccount:
+          type: string
+          example: "9876543210"
+        receiverName:
+          type: string
+          example: "NGUYEN VAN A"
+
+    # Schemas - Integration
+    RequestInput:
+      type: object
+      required: [type, reason]
+      properties:
+        type:
+          type: string
+          enum: [LEAVE, OVERTIME, REMOTE, EXPENSE]
+          example: "LEAVE"
+        reason:
+          type: string
+          example: "Nghỉ phép cá nhân"
+        startDate:
+          type: string
+          format: date
+          example: "2026-11-05"
+        endDate:
+          type: string
+          format: date
+          example: "2026-11-06"
+
+    NewsInput:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+          example: "Thông báo lịch nghỉ lễ"
+        content:
+          type: string
+          example: "Toàn bộ nhân viên được nghỉ lễ từ ngày..."
+        pinned:
+          type: boolean
+          example: false
+
+    WifiConfigInput:
+      type: object
+      required: [ssid, bssid, branchSlug]
+      properties:
+        ssid:
+          type: string
+          example: "HRM_Office_5G"
+        bssid:
+          type: string
+          example: "00:11:22:33:44:55"
+        branchSlug:
+          type: string
+          example: "hn-1"
+
+paths:
+  # ==========================================
+  # IDENTITY SERVICE (Authentication)
+  # ==========================================
+  /api/auth/login:
+    post:
+      tags: [1. Authentication]
+      summary: Đăng nhập hệ thống
+      description: Kiểm tra email/mật khẩu, trả về Access/Refresh token và thiết lập Cookie `hrm-session`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Đăng nhập thành công
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: "hrm-session=eyJhbGciOi...; Path=/; HttpOnly; SameSite=Lax"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/LoginResponseData'
+                  message:
+                    type: string
+                    example: Đăng nhập thành công
+        '400':
+          description: Dữ liệu đầu vào không hợp lệ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiError'
+        '401':
+          description: Sai tài khoản hoặc mật khẩu
+
+  /api/auth/logout:
+    post:
+      tags: [1. Authentication]
+      summary: Đăng xuất
+      description: Thu hồi phiên đăng nhập và xóa cookie `hrm-session`.
+      responses:
+        '200':
+          description: Đăng xuất thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /api/auth/refresh:
+    post:
+      tags: [1. Authentication]
+      summary: Làm mới Access Token
+      description: Cấp Access Token mới từ Refresh Token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Cấp mới token thành công
+
+  /api/auth/forgot-password:
+    post:
+      tags: [1. Authentication]
+      summary: Yêu cầu khôi phục mật khẩu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+      responses:
+        '200':
+          description: Hướng dẫn khôi phục đã được gửi qua email
+
+  /api/auth/me:
+    get:
+      tags: [1. Authentication]
+      summary: Lấy thông tin tài khoản hiện tại
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Lấy thông tin thành công
+        '401':
+          description: Chưa xác thực
+
+  /api/auth/change-password:
+    post:
+      tags: [1. Authentication]
+      summary: Đổi mật khẩu
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: Đổi mật khẩu thành công
+
+  /api/auth/devices:
+    get:
+      tags: [1. Authentication]
+      summary: Danh sách thiết bị / phiên đăng nhập
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách các phiên đăng nhập đang hoạt động
+
+  /api/auth/devices/{id}:
+    delete:
+      tags: [1. Authentication]
+      summary: Thu hồi phiên đăng nhập thiết bị
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Đã thu hồi phiên đăng nhập
+
+  # ==========================================
+  # ORGANIZATION SERVICE
+  # ==========================================
+  /api/branches:
+    get:
+      tags: [2. Organization]
+      summary: Danh sách chi nhánh
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách chi nhánh
+    post:
+      tags: [2. Organization]
+      summary: Tạo mới chi nhánh
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchInput'
+      responses:
+        '201':
+          description: Tạo chi nhánh thành công
+
+  /api/branches/{slug}:
+    get:
+      tags: [2. Organization]
+      summary: Lấy chi tiết chi nhánh
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+            example: "hn-1"
+      responses:
+        '200':
+          description: Chi tiết chi nhánh
+        '404':
+          description: Không tìm thấy
+    put:
+      tags: [2. Organization]
+      summary: Cập nhật chi nhánh
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BranchInput'
+      responses:
+        '200':
+          description: Cập nhật thành công
+    delete:
+      tags: [2. Organization]
+      summary: Xóa chi nhánh
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Xóa chi nhánh thành công
+
+  /api/departments:
+    get:
+      tags: [2. Organization]
+      summary: Danh sách phòng ban
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách phòng ban
+    post:
+      tags: [2. Organization]
+      summary: Tạo mới phòng ban
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentInput'
+      responses:
+        '201':
+          description: Tạo thành công
+
+  /api/departments/{id}:
+    get:
+      tags: [2. Organization]
+      summary: Lấy chi tiết phòng ban
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chi tiết phòng ban
+    put:
+      tags: [2. Organization]
+      summary: Cập nhật phòng ban
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DepartmentInput'
+      responses:
+        '200':
+          description: Cập nhật thành công
+    delete:
+      tags: [2. Organization]
+      summary: Xóa phòng ban
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Xóa thành công
+
+  /api/employees:
+    get:
+      tags: [2. Organization]
+      summary: Danh sách nhân viên
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: query
+          name: branchSlug
+          schema:
+            type: string
+        - in: query
+          name: departmentId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Danh sách nhân viên
+    post:
+      tags: [2. Organization]
+      summary: Tạo hồ sơ nhân viên mới
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeInput'
+      responses:
+        '201':
+          description: Tạo hồ sơ nhân viên thành công
+
+  /api/employees/{id}:
+    get:
+      tags: [2. Organization]
+      summary: Lấy hồ sơ chi tiết nhân viên
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chi tiết nhân viên
+    put:
+      tags: [2. Organization]
+      summary: Cập nhật hồ sơ nhân viên
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeInput'
+      responses:
+        '200':
+          description: Cập nhật thành công
+    delete:
+      tags: [2. Organization]
+      summary: Xóa hồ sơ nhân viên
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Xóa thành công
+
+  /api/employees/{id}/leave:
+    post:
+      tags: [2. Organization]
+      summary: Đánh dấu nhân viên thôi việc / tạm dừng
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cập nhật trạng thái thôi việc thành công
+
+  # ==========================================
+  # WORK SERVICE (Shifts & Attendance)
+  # ==========================================
+  /api/shift-templates:
+    get:
+      tags: [3. Work & Shifts]
+      summary: Danh sách khung ca mẫu
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách ca mẫu
+    post:
+      tags: [3. Work & Shifts]
+      summary: Tạo khung ca mẫu mới
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftTemplateInput'
+      responses:
+        '201':
+          description: Tạo thành công
+
+  /api/shift-templates/{id}:
+    put:
+      tags: [3. Work & Shifts]
+      summary: Cập nhật khung ca mẫu
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftTemplateInput'
+      responses:
+        '200':
+          description: Cập nhật thành công
+    delete:
+      tags: [3. Work & Shifts]
+      summary: Xóa khung ca mẫu
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Xóa thành công
+
+  /api/shifts:
+    get:
+      tags: [3. Work & Shifts]
+      summary: Danh sách lịch ca làm việc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: query
+          name: fromDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: toDate
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: branchSlug
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Danh sách ca làm việc
+    post:
+      tags: [3. Work & Shifts]
+      summary: Xếp ca làm việc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftInput'
+      responses:
+        '201':
+          description: Tạo lịch ca thành công
+
+  /api/shifts/{id}:
+    get:
+      tags: [3. Work & Shifts]
+      summary: Chi tiết ca làm việc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chi tiết ca làm việc
+    put:
+      tags: [3. Work & Shifts]
+      summary: Cập nhật ca làm việc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShiftInput'
+      responses:
+        '200':
+          description: Cập nhật thành công
+    delete:
+      tags: [3. Work & Shifts]
+      summary: Hủy bỏ ca làm việc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Xóa thành công
+
+  /api/shifts/{id}/assign:
+    post:
+      tags: [3. Work & Shifts]
+      summary: Phân công nhân viên vào ca
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [employeeId]
+              properties:
+                employeeId:
+                  type: string
+      responses:
+        '200':
+          description: Phân công thành công
+
+  /api/shifts/register:
+    post:
+      tags: [3. Work & Shifts]
+      summary: Nhân viên đăng ký nhận ca làm việc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shiftId]
+              properties:
+                shiftId:
+                  type: string
+      responses:
+        '200':
+          description: Đăng ký thành công
+
+  # ==========================================
+  # ATTENDANCE (Chấm công)
+  # ==========================================
+  /api/attendance:
+    get:
+      tags: [4. Attendance]
+      summary: Tra cứu dữ liệu chấm công
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: string
+        - in: query
+          name: month
+          schema:
+            type: string
+            example: "2026-11"
+      responses:
+        '200':
+          description: Dữ liệu chấm công
+
+  /api/attendance/checkin:
+    post:
+      tags: [4. Attendance]
+      summary: Chấm công vào ca (Wi-Fi Check-in)
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceCheckinInput'
+      responses:
+        '200':
+          description: Check-in thành công
+
+  /api/attendance/checkout:
+    post:
+      tags: [4. Attendance]
+      summary: Chấm công ra ca (Wi-Fi Check-out)
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceCheckinInput'
+      responses:
+        '200':
+          description: Check-out thành công
+
+  /api/attendance/config:
+    get:
+      tags: [4. Attendance]
+      summary: Xem cấu hình chấm công (thời gian cho phép trễ, khoảng cách)
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Cấu hình hiện tại
+    put:
+      tags: [4. Attendance]
+      summary: Cập nhật quy chế chấm công
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                graceMinutes:
+                  type: integer
+                  example: 15
+                requireWifi:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Cập nhật thành công
+
+  # ==========================================
+  # TASKS
+  # ==========================================
+  /api/tasks:
+    get:
+      tags: [5. Tasks]
+      summary: Danh sách công việc phân công
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: query
+          name: employeeId
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Danh sách công việc
+    post:
+      tags: [5. Tasks]
+      summary: Giao công việc mới
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '201':
+          description: Giao việc thành công
+
+  /api/tasks/{id}:
+    get:
+      tags: [5. Tasks]
+      summary: Chi tiết công việc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chi tiết công việc
+    put:
+      tags: [5. Tasks]
+      summary: Cập nhật trạng thái / thông tin công việc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '200':
+          description: Cập nhật thành công
+    delete:
+      tags: [5. Tasks]
+      summary: Xóa công việc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Xóa thành công
+
+  # ==========================================
+  # PAYROLL SERVICE
+  # ==========================================
+  /api/payroll/bank-accounts:
+    get:
+      tags: [6. Payroll]
+      summary: Danh sách tài khoản ngân hàng chi trả doanh nghiệp
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách tài khoản doanh nghiệp
+    post:
+      tags: [6. Payroll]
+      summary: Thêm tài khoản ngân hàng doanh nghiệp
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankAccountInput'
+      responses:
+        '201':
+          description: Thêm thành công
+
+  /api/payroll/bank-accounts/{id}:
+    put:
+      tags: [6. Payroll]
+      summary: Cập nhật thông tin tài khoản ngân hàng
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankAccountInput'
+      responses:
+        '200':
+          description: Cập nhật thành công
+    delete:
+      tags: [6. Payroll]
+      summary: Xóa tài khoản doanh nghiệp
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Xóa thành công
+
+  /api/payroll/payslips:
+    get:
+      tags: [6. Payroll]
+      summary: Danh sách phiếu lương nhân viên
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: query
+          name: month
+          schema:
+            type: string
+            example: "2026-11"
+        - in: query
+          name: employeeId
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Danh sách phiếu lương
+
+  /api/payroll/payslips/generate:
+    post:
+      tags: [6. Payroll]
+      summary: Tự động tổng hợp công và sinh phiếu lương
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [month, branchSlug]
+              properties:
+                month:
+                  type: string
+                  example: "2026-11"
+                branchSlug:
+                  type: string
+                  example: "hn-1"
+      responses:
+        '200':
+          description: Tính lương thành công
+
+  /api/payroll/payslips/{id}:
+    get:
+      tags: [6. Payroll]
+      summary: Chi tiết phiếu lương
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Chi tiết phiếu lương
+    put:
+      tags: [6. Payroll]
+      summary: Điều chỉnh phiếu lương (thưởng, phạt, khấu trừ)
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                bonus:
+                  type: number
+                  example: 1000000
+                deductions:
+                  type: number
+                  example: 200000
+      responses:
+        '200':
+          description: Cập nhật thành công
+
+  /api/payroll/payslips/{id}/status:
+    put:
+      tags: [6. Payroll]
+      summary: Cập nhật trạng thái phiếu lương (DRAFT -> APPROVED -> PAID)
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [DRAFT, APPROVED, PAID, REJECTED]
+      responses:
+        '200':
+          description: Đổi trạng thái thành công
+
+  /api/payroll/payouts:
+    get:
+      tags: [6. Payroll]
+      summary: Lịch sử các lệnh chi tiền qua cổng ngân hàng
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách lệnh chi
+    post:
+      tags: [6. Payroll]
+      summary: Tạo lệnh chi tiền lương ngân hàng (Kèm Idempotency Key)
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PayoutInput'
+      responses:
+        '201':
+          description: Khởi tạo lệnh chi thành công
+        '200':
+          description: Trả về kết quả giao dịch đã lưu trước đó (Do trùng idempotencyKey)
+
+  # ==========================================
+  # INTEGRATION & COMMUNICATIONS
+  # ==========================================
+  /api/requests:
+    get:
+      tags: [7. Requests & Workflow]
+      summary: Danh sách đơn từ (Nghỉ phép, tăng ca, công tác)
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách đơn từ
+    post:
+      tags: [7. Requests & Workflow]
+      summary: Tạo đơn từ mới
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestInput'
+      responses:
+        '201':
+          description: Tạo đơn thành công
+
+  /api/requests/{id}/approve:
+    put:
+      tags: [7. Requests & Workflow]
+      summary: Duyệt đơn từ
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Duyệt đơn thành công
+
+  /api/requests/{id}/reject:
+    put:
+      tags: [7. Requests & Workflow]
+      summary: Từ chối đơn từ
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  example: "Không đủ nhân sự thay thế ca này"
+      responses:
+        '200':
+          description: Từ chối đơn thành công
+
+  /api/news:
+    get:
+      tags: [8. Internal Communications]
+      summary: Bảng tin thông báo nội bộ
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách tin bài
+    post:
+      tags: [8. Internal Communications]
+      summary: Đăng bài thông báo mới
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewsInput'
+      responses:
+        '201':
+          description: Đăng tin thành công
+
+  /api/regulations:
+    get:
+      tags: [8. Internal Communications]
+      summary: Danh sách nội quy & quy chế công ty
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách nội quy
+
+  /api/notifications:
+    get:
+      tags: [8. Internal Communications]
+      summary: Danh sách thông báo cá nhân
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách thông báo
+    put:
+      tags: [8. Internal Communications]
+      summary: Đánh dấu tất cả thông báo là đã đọc
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Thao tác thành công
+
+  /api/wifi-configs:
+    get:
+      tags: [9. System & Gateway]
+      summary: Danh sách cấu hình Wi-Fi chấm công tại các chi nhánh
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      responses:
+        '200':
+          description: Danh sách Wi-Fi hợp lệ
+    post:
+      tags: [9. System & Gateway]
+      summary: Cấu hình điểm truy cập Wi-Fi mới
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WifiConfigInput'
+      responses:
+        '201':
+          description: Lưu cấu hình thành công
+
+  /api/upload:
+    post:
+      tags: [9. System & Gateway]
+      summary: Tải tệp lên hệ thống (Ảnh đại diện, đính kèm đơn)
+      security:
+        - BearerAuth: []
+        - CookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: File ảnh hoặc tài liệu cần upload
+      responses:
+        '200':
+          description: Upload thành công, trả về URL truy cập ảnh
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      url:
+                        type: string
+                        example: "https://res.cloudinary.com/.../avatar.jpg"
+                      publicId:
+                        type: string
+
+  /soap/payroll:
+    get:
+      tags: [9. System & Gateway]
+      summary: Cổng SOAP Ngân hàng — Lấy định nghĩa WSDL
+      description: Nhận tệp XML mô tả dịch vụ WSDL ngân hàng phục vụ đối soát chi lương.
+      parameters:
+        - in: query
+          name: wsdl
+          required: false
+          schema:
+            type: boolean
+          example: true
+      responses:
+        '200':
+          description: WSDL XML Document
+          content:
+            text/xml:
+              schema:
+                type: string
+
