@@ -1,10 +1,14 @@
 "use strict";
 
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const morgan = require("morgan");
 const { createProxyMiddleware } = require("http-proxy-middleware");
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
+
 const config = require("./config");
 const { errorHandler } = require("./middlewares/errorHandler");
 const { createAuthMiddleware } = require("./middlewares/auth");
@@ -20,6 +24,50 @@ app.use(cookieParser());
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok", service: config.serviceName, time: new Date().toISOString() });
 });
+
+// Phục vụ API Contract & Swagger UI tập trung (truy cập công khai, không bị rate-limit chặn asset)
+const openapiPath = path.join(__dirname, "../docs/openapi.yaml");
+let swaggerDocument;
+try {
+  swaggerDocument = YAML.load(openapiPath);
+} catch (err) {
+  console.warn("[gateway] Không thể nạp docs/openapi.yaml:", err.message);
+}
+
+if (swaggerDocument) {
+  // Trả về OpenAPI Schema dạng JSON cho Postman, Insomnia, Swagger Codegen
+  app.get("/docs/openapi.json", (_req, res) => {
+    res.json(swaggerDocument);
+  });
+
+  // Trả về file OpenAPI Spec gốc dạng YAML
+  app.get("/docs/openapi.yaml", (_req, res) => {
+    res.sendFile(openapiPath);
+  });
+
+  // Giao diện Swagger UI tương tác trực quan
+  const swaggerOptions = {
+    customSiteTitle: "HRM Enterprise — API Contract & Help Page",
+    customCss: `
+      .swagger-ui .topbar { display: none }
+      .swagger-ui .info { margin: 25px 0 15px 0; }
+      .swagger-ui .info .title { font-size: 28px; color: #1e293b; font-weight: 700; }
+    `,
+    swaggerOptions: {
+      persistAuthorization: true,
+      displayRequestDuration: true,
+      docExpansion: "none",
+      filter: true,
+      tryItOutEnabled: true,
+    },
+  };
+
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, swaggerOptions));
+  // Hỗ trợ các alias quen thuộc như trong ASP.NET (/help, /swagger, /api-docs)
+  app.get("/api-docs", (_req, res) => res.redirect("/docs"));
+  app.get("/help", (_req, res) => res.redirect("/docs"));
+  app.get("/swagger", (_req, res) => res.redirect("/docs"));
+}
 
 // Giới hạn tần suất + xác thực JWT trước khi proxy (TECHS.md §6.3).
 app.use(createRateLimitMiddleware());

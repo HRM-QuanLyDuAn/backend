@@ -153,6 +153,15 @@ npm test
 
 ---
 
+## 📖 API Contract & Tài liệu Swagger UI
+
+Hệ thống tích hợp trang **API Contract & Swagger UI (OpenAPI 3.0)** tập trung tại API Gateway (Port 4000):
+- **Trang tra cứu & Test trực quan:** http://localhost:4000/docs (hoặc http://localhost:4000/api-docs)
+- **Tải OpenAPI Spec JSON (dành cho Postman, Insomnia, Code Generator):** http://localhost:4000/docs/openapi.json
+- **Tải OpenAPI Spec YAML:** http://localhost:4000/docs/openapi.yaml
+
+---
+
 ## 🏦 Tích hợp Cổng Ngân hàng (SOAP Bank Simulator)
 
 Hệ thống tích hợp giả lập cổng ngân hàng phục vụ đối soát và chi lương tự động:
