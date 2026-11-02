@@ -80,6 +80,22 @@ backend/
 
 ## 🚀 Hướng dẫn Cài đặt & Khởi chạy
 
+### Cách 1: Khởi động toàn bộ Hệ thống bằng Docker Compose (Khuyên dùng)
+Tệp `docker-compose.yml` điều phối khởi động tự động toàn bộ 5 Database containers độc lập và 6 dịch vụ Microservices (cổng `4000` - `4005`):
+
+```bash
+# Khởi động toàn bộ cơ sở dữ liệu và 6 dịch vụ (4000-4005)
+docker compose up --build -d
+
+# Kiểm tra trạng thái toàn bộ 11 containers (5 DBs + 6 Services)
+docker compose ps
+
+# Kiểm tra phản hồi 6/6 endpoint GET /health tự động
+node scripts/verify-services.js
+```
+
+### Cách 2: Khởi động cho Môi trường Phát triển (Dev Mode)
+
 ### Bước 0: Khởi động 5 Database Containers bằng Docker Compose
 Dự án sử dụng cơ chế Database-per-Service. Mỗi service kết nối tới một node PostgreSQL độc lập trên các cổng từ `5433` đến `5437`.
 

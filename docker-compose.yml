@@ -1,8 +1,8 @@
 services:
-  # Mỗi service nghiệp vụ có 1 Postgres RIÊNG BIỆT (server/node/volume/port độc lập) —
-  # database-per-service thật sự ở mức hạ tầng: 1 DB sập không kéo theo 4 DB còn lại.
-  # Đây chỉ là hạ tầng DB local để dev/test; app service chạy ngoài Docker bằng `npm run dev`.
-  # Production: mỗi service trỏ 1 link Supabase riêng qua DATABASE_URL (xem .env.example từng service).
+  # ============================================================================
+  # CƠ SỞ DỮ LIỆU ĐỘC LẬP CHO TỪNG DỊCH VỤ (Database-per-Service SOA)
+  # Mỗi service sở hữu 1 Postgres riêng biệt (node, volume, port độc lập 5433-5437).
+  # ============================================================================
 
   db-identity: # A — 4001
     image: postgres:16-alpine
@@ -13,7 +13,6 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: hrm_identity
     ports:
-      # Host dùng 5433..5437 để né container Postgres của dự án khác đang chiếm 5432.
       - "5433:5432"
     volumes:
       - hrm-identity-pgdata:/var/lib/postgresql/data
@@ -22,6 +21,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - hrm-network
 
   db-organization: # B — 4002
     image: postgres:16-alpine
@@ -40,6 +41,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - hrm-network
 
   db-work: # B — 4003
     image: postgres:16-alpine
@@ -58,6 +61,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - hrm-network
 
   db-payroll: # D — 4004
     image: postgres:16-alpine
@@ -76,6 +81,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - hrm-network
 
   db-integration: # E — 4005
     image: postgres:16-alpine
@@ -94,6 +101,172 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - hrm-network
+
+  # ============================================================================
+  # 6 DỊCH VỤ MICROSERVICES NỘI BỘ (Cổng 4000 - 4005)
+  # ============================================================================
+
+  identity-service:
+    build:
+      context: ./backend/identity-service
+      dockerfile: Dockerfile
+    container_name: hrm-identity-service
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    environment:
+      PORT: 4001
+      SERVICE_NAME: identity-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-identity:5432/hrm_identity?schema=public
+      JWT_SECRET: dev_only_secret_thay_khi_deploy
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      ALLOW_MEMORY_FALLBACK: "true"
+    depends_on:
+      db-identity:
+        condition: service_healthy
+    networks:
+      - hrm-network
+
+  organization-service:
+    build:
+      context: ./backend/organization-service
+      dockerfile: Dockerfile
+    container_name: hrm-organization-service
+    restart: unless-stopped
+    ports:
+      - "4002:4002"
+    environment:
+      PORT: 4002
+      SERVICE_NAME: organization-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-organization:5432/hrm_organization?schema=public
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      IDENTITY_URL: http://identity-service:4001
+    depends_on:
+      db-organization:
+        condition: service_healthy
+      identity-service:
+        condition: service_started
+    networks:
+      - hrm-network
+
+  work-service:
+    build:
+      context: ./backend/work-service
+      dockerfile: Dockerfile
+    container_name: hrm-work-service
+    restart: unless-stopped
+    ports:
+      - "4003:4003"
+    environment:
+      PORT: 4003
+      SERVICE_NAME: work-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-work:5432/hrm_work?schema=public
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+    depends_on:
+      db-work:
+        condition: service_healthy
+    networks:
+      - hrm-network
+
+  payroll-service:
+    build:
+      context: ./backend/payroll-service
+      dockerfile: Dockerfile
+    container_name: hrm-payroll-service
+    restart: unless-stopped
+    ports:
+      - "4004:4004"
+    environment:
+      PORT: 4004
+      SERVICE_NAME: payroll-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-payroll:5432/hrm_payroll?schema=public
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      ORGANIZATION_URL: http://organization-service:4002
+      WORK_URL: http://work-service:4003
+    depends_on:
+      db-payroll:
+        condition: service_healthy
+      organization-service:
+        condition: service_started
+      work-service:
+        condition: service_started
+    networks:
+      - hrm-network
+
+  integration-service:
+    build:
+      context: ./backend/integration-service
+      dockerfile: Dockerfile
+    container_name: hrm-integration-service
+    restart: unless-stopped
+    ports:
+      - "4005:4005"
+    environment:
+      PORT: 4005
+      SERVICE_NAME: integration-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-integration:5432/hrm_integration?schema=public
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      PAYROLL_SERVICE_URL: http://payroll-service:4004
+      WORK_SERVICE_URL: http://work-service:4003
+    depends_on:
+      db-integration:
+        condition: service_healthy
+      payroll-service:
+        condition: service_started
+      work-service:
+        condition: service_started
+    networks:
+      - hrm-network
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: hrm-api-gateway
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      SERVICE_NAME: api-gateway
+      NODE_ENV: production
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      PROXY_TIMEOUT_MS: 5000
+      JWT_SECRET: dev_only_secret_thay_khi_deploy
+      COOKIE_NAME: hrm-session
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX: 300
+      IDENTITY_URL: http://identity-service:4001
+      ORGANIZATION_URL: http://organization-service:4002
+      WORK_URL: http://work-service:4003
+      PAYROLL_URL: http://payroll-service:4004
+      INTEGRATION_URL: http://integration-service:4005
+    depends_on:
+      identity-service:
+        condition: service_started
+      organization-service:
+        condition: service_started
+      work-service:
+        condition: service_started
+      payroll-service:
+        condition: service_started
+      integration-service:
+        condition: service_started
+    networks:
+      - hrm-network
+
+networks:
+  hrm-network:
+    driver: bridge
 
 volumes:
   hrm-identity-pgdata:
