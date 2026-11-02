@@ -1,0 +1,153 @@
+services:
+  # ============================================================================
+  # 6 DỊCH VỤ MICROSERVICES NỘI BỘ (Cổng 4000 - 4005)
+  # ============================================================================
+
+  identity-service:
+    build:
+      context: ./backend/identity-service
+      dockerfile: Dockerfile
+    container_name: hrm-identity-service
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+    environment:
+      PORT: 4001
+      SERVICE_NAME: identity-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-identity:5432/hrm_identity?schema=public
+      JWT_SECRET: dev_only_secret_thay_khi_deploy
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      ALLOW_MEMORY_FALLBACK: "true"
+    networks:
+      - hrm-network
+
+  organization-service:
+    build:
+      context: ./backend/organization-service
+      dockerfile: Dockerfile
+    container_name: hrm-organization-service
+    restart: unless-stopped
+    ports:
+      - "4002:4002"
+    environment:
+      PORT: 4002
+      SERVICE_NAME: organization-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-organization:5432/hrm_organization?schema=public
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      IDENTITY_URL: http://identity-service:4001
+    depends_on:
+      identity-service:
+        condition: service_started
+    networks:
+      - hrm-network
+
+  work-service:
+    build:
+      context: ./backend/work-service
+      dockerfile: Dockerfile
+    container_name: hrm-work-service
+    restart: unless-stopped
+    ports:
+      - "4003:4003"
+    environment:
+      PORT: 4003
+      SERVICE_NAME: work-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-work:5432/hrm_work?schema=public
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+    networks:
+      - hrm-network
+
+  payroll-service:
+    build:
+      context: ./backend/payroll-service
+      dockerfile: Dockerfile
+    container_name: hrm-payroll-service
+    restart: unless-stopped
+    ports:
+      - "4004:4004"
+    environment:
+      PORT: 4004
+      SERVICE_NAME: payroll-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-payroll:5432/hrm_payroll?schema=public
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      ORGANIZATION_URL: http://organization-service:4002
+      WORK_URL: http://work-service:4003
+    depends_on:
+      organization-service:
+        condition: service_started
+      work-service:
+        condition: service_started
+    networks:
+      - hrm-network
+
+  integration-service:
+    build:
+      context: ./backend/integration-service
+      dockerfile: Dockerfile
+    container_name: hrm-integration-service
+    restart: unless-stopped
+    ports:
+      - "4005:4005"
+    environment:
+      PORT: 4005
+      SERVICE_NAME: integration-service
+      NODE_ENV: production
+      DATABASE_URL: postgresql://postgres:postgres@db-integration:5432/hrm_integration?schema=public
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      PAYROLL_SERVICE_URL: http://payroll-service:4004
+      WORK_SERVICE_URL: http://work-service:4003
+    depends_on:
+      payroll-service:
+        condition: service_started
+      work-service:
+        condition: service_started
+    networks:
+      - hrm-network
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: hrm-api-gateway
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      PORT: 4000
+      SERVICE_NAME: api-gateway
+      NODE_ENV: production
+      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
+      PROXY_TIMEOUT_MS: 5000
+      JWT_SECRET: dev_only_secret_thay_khi_deploy
+      COOKIE_NAME: hrm-session
+      RATE_LIMIT_WINDOW_MS: 60000
+      RATE_LIMIT_MAX: 300
+      IDENTITY_URL: http://identity-service:4001
+      ORGANIZATION_URL: http://organization-service:4002
+      WORK_URL: http://work-service:4003
+      PAYROLL_URL: http://payroll-service:4004
+      INTEGRATION_URL: http://integration-service:4005
+    depends_on:
+      identity-service:
+        condition: service_started
+      organization-service:
+        condition: service_started
+      work-service:
+        condition: service_started
+      payroll-service:
+        condition: service_started
+      integration-service:
+        condition: service_started
+    networks:
+      - hrm-network
+
+networks:
+  hrm-network:
+    name: hrm-network
+    driver: bridge

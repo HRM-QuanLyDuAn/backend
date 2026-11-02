@@ -80,12 +80,18 @@ backend/
 
 ## 🚀 Hướng dẫn Cài đặt & Khởi chạy
 
-### Cách 1: Khởi động toàn bộ Hệ thống bằng Docker Compose (Khuyên dùng)
-Tệp `docker-compose.yml` điều phối khởi động tự động toàn bộ 5 Database containers độc lập và 6 dịch vụ Microservices (cổng `4000` - `4005`):
+Hạ tầng Docker được tách biệt thành 2 tệp rõ ràng:
+* **`docker-compose.db.yml`**: Quản lý 5 cơ sở dữ liệu PostgreSQL độc lập (`5433` - `5437`).
+* **`docker-compose.services.yml`**: Quản lý 6 dịch vụ Microservices (`4000` - `4005`).
+* **`docker-compose.yml`**: Tệp điều phối nạp tự động cả 2 tệp trên thông qua cơ chế `include`.
 
+### Cách 1: Khởi động toàn bộ Hệ thống bằng Docker Compose (Khuyên dùng)
 ```bash
 # Khởi động toàn bộ cơ sở dữ liệu và 6 dịch vụ (4000-4005)
 docker compose up --build -d
+
+# Hoặc khởi động chỉ định rõ 2 tệp:
+docker compose -f docker-compose.db.yml -f docker-compose.services.yml up --build -d
 
 # Kiểm tra trạng thái toàn bộ 11 containers (5 DBs + 6 Services)
 docker compose ps
@@ -96,15 +102,15 @@ node scripts/verify-services.js
 
 ### Cách 2: Khởi động cho Môi trường Phát triển (Dev Mode)
 
-### Bước 0: Khởi động 5 Database Containers bằng Docker Compose
+#### Bước 0: Chỉ khởi động 5 Database Containers (Cổng 5433 - 5437)
 Dự án sử dụng cơ chế Database-per-Service. Mỗi service kết nối tới một node PostgreSQL độc lập trên các cổng từ `5433` đến `5437`.
 
 ```bash
-# Khởi động toàn bộ 5 container DB trong nền
-docker compose up -d
+# Chỉ chạy 5 database PostgreSQL
+docker compose -f docker-compose.db.yml up -d
 
-# Kiểm tra trạng thái các container (đảm bảo cả 5 container đều Up)
-docker compose ps
+# Kiểm tra trạng thái các container DB
+docker compose -f docker-compose.db.yml ps
 ```
 
 ### Bước 1: Khởi động API Gateway (Port 4000)
