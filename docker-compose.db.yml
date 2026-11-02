@@ -115,3 +115,4 @@ volumes:
   hrm-work-pgdata:
   hrm-payroll-pgdata:
   hrm-integration-pgdata:
+
